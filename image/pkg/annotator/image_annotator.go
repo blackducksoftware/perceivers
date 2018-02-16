@@ -14,6 +14,7 @@ import (
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	imageclient "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
@@ -69,9 +70,7 @@ func (ia *ImageAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 			for _, image := range scanResults.Images {
 				imageAnnotations := bdannotations.NewBlackDuckImageAnnotation(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL)
 				if err = ia.setAnnotationsOnImage(image.Name, image.Sha, imageAnnotations); err != nil {
-					log.Errorf("failed to annotated image %s@%s: %v", image.Name, image.Sha, err)
-				} else {
-					log.Infof("successfully annotated image %s@sha256:%s", image.Name, image.Sha)
+					log.Errorf("failed to annotate image %s@sha256%s: %v", image.Name, image.Sha, err)
 				}
 			}
 		} else {
@@ -94,8 +93,13 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 
 	// Get the image
 	image, err := ia.client.Images().Get(getName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("ignoring image %s: %v", fullImageName, err)
+	if errors.IsNotFound(err) {
+		// This isn't an image in openshift
+		return nil
+	} else if err != nil {
+		// Some other kind of error, possibly couldn't communicate, so return
+		// an error
+		return fmt.Errorf("unexpected error retrieving image %s: %v", fullImageName, err)
 	}
 
 	// Verify the sha of the scanned image matches that of the image we retrieved
@@ -146,7 +150,8 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 		if err != nil {
 			return fmt.Errorf("unable to update annotations/labels for image %s: %v", fullImageName, err)
 		}
+		log.Infof("successfully annotated image %s", fullImageName)
 	}
 
-	return err
+	return nil
 }
