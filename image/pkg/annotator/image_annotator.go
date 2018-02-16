@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	bdannotations "github.com/blackducksoftware/perceivers/pkg/annotations"
@@ -49,7 +50,7 @@ func (ia *ImageAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 		log.Infof("attempting to GET %s for image annotation", ia.scanResultsURL)
 		resp, err := http.Get(ia.scanResultsURL)
 		if err != nil {
-			log.Errorf("unable to GET %s for image annotation: %v", ia.scanResultsURL, err.Error())
+			log.Errorf("unable to GET %s for image annotation: %v", ia.scanResultsURL, err)
 			continue
 		}
 		defer resp.Body.Close()
@@ -69,29 +70,41 @@ func (ia *ImageAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 				imageAnnotations := bdannotations.NewBlackDuckImageAnnotation(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL)
 				if err = ia.setAnnotationsOnImage(image.Name, image.Sha, imageAnnotations); err != nil {
 					log.Errorf("failed to annotated image %s@%s: %v", image.Name, image.Sha, err)
+				} else {
+					log.Infof("successfully annotated image %s@sha256:%s", image.Name, image.Sha)
 				}
 			}
 		} else {
-			log.Errorf("unable to Unmarshal ScanResults from url %s: %s", ia.scanResultsURL, err.Error())
+			log.Errorf("unable to unmarshal ScanResults from url %s: %v", ia.scanResultsURL, err)
 		}
 	}
 }
 
 func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImageAnnotations *bdannotations.BlackDuckImageAnnotation) error {
+	var imageName string
+	getName := fmt.Sprintf("sha256:%s", sha)
+	fullImageName := fmt.Sprintf("%s@%s", name, getName)
+
+	nameStart := strings.LastIndex(name, "/") + 1
+	if nameStart >= 0 {
+		imageName = name[nameStart:]
+	} else {
+		imageName = name
+	}
+
 	// Get the image
-	imageName := fmt.Sprintf("%s@%s", name, sha)
-	image, err := ia.client.Images().Get(name, metav1.GetOptions{})
+	image, err := ia.client.Images().Get(getName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("unable to get image %s: %v", imageName, err)
+		return fmt.Errorf("ignoring image %s: %v", fullImageName, err)
 	}
 
 	// Verify the sha of the scanned image matches that of the image we retrieved
 	_, imageSha, err := docker.ParseImageIDString(image.DockerImageReference)
 	if err != nil {
-		return fmt.Errorf("unable to parse openshift imageID from image %s: %v", name, err)
+		return fmt.Errorf("unable to parse openshift imageID from image %s: %v", imageName, err)
 	}
 	if imageSha != sha {
-		return fmt.Errorf("image sha doesn't match for image %s.  Got %s, expected %s", name, sha, imageSha)
+		return fmt.Errorf("image sha doesn't match for image %s.  Got %s, expected %s", imageName, sha, imageSha)
 	}
 
 	// Get existing annotations on the image
@@ -113,7 +126,7 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 	// Apply updated annotations to the image if the existing annotations don't
 	// contain the expected entries
 	updateImage := false
-	if utils.SameStringMap(currentAnnotations, newAnnotations) {
+	if !utils.StringMapContains(currentAnnotations, newAnnotations) {
 		currentAnnotations = utils.MapMerge(currentAnnotations, newAnnotations)
 		image.SetAnnotations(currentAnnotations)
 		updateImage = true
@@ -121,7 +134,7 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 
 	// Apply updated labels to the image if the existing annotations don't
 	// contain the expected entries
-	if utils.SameStringMap(currentLabels, newLabels) {
+	if !utils.StringMapContains(currentLabels, newLabels) {
 		currentLabels = utils.MapMerge(currentLabels, newLabels)
 		image.SetLabels(currentLabels)
 		updateImage = true
@@ -131,7 +144,7 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 	if updateImage {
 		_, err = ia.client.Images().Update(image)
 		if err != nil {
-			return fmt.Errorf("unable to update annotations/labels for image %s: %v", imageName, err)
+			return fmt.Errorf("unable to update annotations/labels for image %s: %v", fullImageName, err)
 		}
 	}
 

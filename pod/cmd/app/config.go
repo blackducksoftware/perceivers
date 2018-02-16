@@ -40,7 +40,7 @@ type PodPerceiverConfig struct {
 func GetPodPerceiverConfig() (*PodPerceiverConfig, error) {
 	var cfg *PodPerceiverConfig
 
-	viper.SetConfigName("pod_perceiver_conf")
+	viper.SetConfigName("perceiver")
 	viper.AddConfigPath("/etc/perceiver")
 
 	err := viper.ReadInConfig()

@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
+	"github.com/blackducksoftware/perceivers/pkg/utils"
 	"github.com/blackducksoftware/perceivers/pod/pkg/mapper"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
@@ -125,7 +126,8 @@ func (pc *PodController) enqueueJob(obj interface{}) {
 }
 
 func (pc *PodController) needsUpdate(oldObj *v1.Pod, newObj *v1.Pod) bool {
-	return true
+	return !utils.MapContainsBDEntries(oldObj.GetLabels(), newObj.GetLabels()) ||
+		!utils.MapContainsBDEntries(oldObj.GetAnnotations(), newObj.GetAnnotations())
 }
 
 func (pc *PodController) runWorker() {

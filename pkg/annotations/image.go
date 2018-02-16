@@ -78,22 +78,18 @@ func CreateImageAnnotations(imageAnnotations *BlackDuckImageAnnotation, name str
 
 	if len(name) > 0 {
 		imagePrefix = fmt.Sprintf("image%d.", count)
-		newAnnotations[fmt.Sprintf("%sblackducksoftware.com", imagePrefix)] = strings.Replace(name, "/", ".", -1)
-		newAnnotations[fmt.Sprintf("%squality.image.openshift.io", imagePrefix)] = strings.Replace(name, "/", ".", -1)
+		imageName := strings.Replace(name, "/", ".", -1)
+		newAnnotations[fmt.Sprintf("%sblackducksoftware.com", imagePrefix)] = imageName
+		newAnnotations[fmt.Sprintf("%squality.image.openshift.io", imagePrefix)] = imageName
 	}
 	/*
 		newAnnotations[fmt.Sprintf("%sblackducksoftware.com/hub-scanner-version", imagePrefix] = imageAnnotations.GetScannerVersion()
 		newAnnotations[fmt.Sprintf("%sblackducksoftware.com/attestation-hub-server", imagePrefix] = imageAnnotations.GetHubServer()
 	*/
 	newAnnotations[fmt.Sprintf("%sblackducksoftware.com/project-endpoint", imagePrefix)] = imageAnnotations.GetComponentsURL()
-	/*
-		if len(imageAnnotations.GetScanID()) > 0 {
-			newAnnotations[fmt.Sprintf("blackducksoftware.com/%sscan-id", imagePostfix)] = imageAnnotations.GetScanID()
-		}
-	*/
 
-	vulnAnnotations := CreateBlackDuckVulnerabilityAnnotation(imageAnnotations.HasVulnerabilities() == true, imageAnnotations.GetVulnerabilityCount())
-	policyAnnotations := CreateBlackDuckPolicyAnnotation(imageAnnotations.HasPolicyViolations() == true, imageAnnotations.GetPolicyViolationCount())
+	vulnAnnotations := CreateBlackDuckVulnerabilityAnnotation(imageAnnotations.HasVulnerabilities() == true, imageAnnotations.GetComponentsURL(), imageAnnotations.GetVulnerabilityCount())
+	policyAnnotations := CreateBlackDuckPolicyAnnotation(imageAnnotations.HasPolicyViolations() == true, imageAnnotations.GetComponentsURL(), imageAnnotations.GetPolicyViolationCount())
 
 	newAnnotations[fmt.Sprintf("%squality.image.openshift.io/vulnerability.blackduck", imagePrefix)] = vulnAnnotations.AsString()
 	newAnnotations[fmt.Sprintf("%squality.image.openshift.io/policy.blackduck", imagePrefix)] = policyAnnotations.AsString()

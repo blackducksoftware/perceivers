@@ -90,6 +90,8 @@ func (pa *PodAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 				podAnnotations := bdannotations.NewBlackDuckPodAnnotation(pod.PolicyViolations, pod.Vulnerabilities, pod.OverallStatus)
 				if err = pa.setAnnotationsOnPod(pod.Name, pod.Namespace, podAnnotations, scanResults.Images); err != nil {
 					log.Errorf("failed to annotate pod %s: %v", pod.Name, err)
+				} else {
+					log.Infof("successfully annotated pod %s", pod.Name)
 				}
 			}
 		} else {
@@ -141,7 +143,7 @@ func (pa *PodAnnotator) setAnnotationsOnPod(name string, ns string, bdPodAnnotat
 	// Apply updated annotations to the pod if the existing annotations don't
 	// contain the expected entries
 	updatePod := false
-	if utils.SameStringMap(currentAnnotations, newAnnotations) {
+	if !utils.StringMapContains(currentAnnotations, newAnnotations) {
 		currentAnnotations = utils.MapMerge(currentAnnotations, newAnnotations)
 		kubePod.SetAnnotations(currentAnnotations)
 		updatePod = true
@@ -149,7 +151,7 @@ func (pa *PodAnnotator) setAnnotationsOnPod(name string, ns string, bdPodAnnotat
 
 	// Apply updated labels to the pod if the existing labels don't
 	// contain the expected entries
-	if utils.SameStringMap(currentLabels, newLabels) {
+	if !utils.StringMapContains(currentLabels, newLabels) {
 		currentLabels = utils.MapMerge(currentLabels, newLabels)
 		kubePod.SetLabels(currentLabels)
 		updatePod = true
