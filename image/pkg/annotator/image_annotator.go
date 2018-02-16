@@ -133,6 +133,7 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 	if !utils.StringMapContains(currentAnnotations, newAnnotations) {
 		currentAnnotations = utils.MapMerge(currentAnnotations, newAnnotations)
 		image.SetAnnotations(currentAnnotations)
+		log.Infof("annotations are missing on image %s.  Got %v expected %v", fullImageName, currentAnnotations, newAnnotations)
 		updateImage = true
 	}
 
@@ -141,6 +142,7 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 	if !utils.StringMapContains(currentLabels, newLabels) {
 		currentLabels = utils.MapMerge(currentLabels, newLabels)
 		image.SetLabels(currentLabels)
+		log.Infof("labels are missing on image %s.  Got %v expected %v", fullImageName, currentLabels, newLabels)
 		updateImage = true
 	}
 
