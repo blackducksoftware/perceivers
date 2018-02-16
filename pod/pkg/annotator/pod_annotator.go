@@ -89,9 +89,7 @@ func (pa *PodAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 			for _, pod := range scanResults.Pods {
 				podAnnotations := bdannotations.NewBlackDuckPodAnnotation(pod.PolicyViolations, pod.Vulnerabilities, pod.OverallStatus)
 				if err = pa.setAnnotationsOnPod(pod.Name, pod.Namespace, podAnnotations, scanResults.Images); err != nil {
-					log.Errorf("failed to annotate pod %s: %v", pod.Name, err)
-				} else {
-					log.Infof("successfully annotated pod %s", pod.Name)
+					log.Errorf("failed to annotate pod %s/%s: %v", pod.Namespace, pod.Name, err)
 				}
 			}
 		} else {
@@ -163,9 +161,10 @@ func (pa *PodAnnotator) setAnnotationsOnPod(name string, ns string, bdPodAnnotat
 		if err != nil {
 			return fmt.Errorf("unable to update annotations/labels for pod %s: %v", podName, err)
 		}
+		log.Infof("successfully annotated pod %s", podName)
 	}
 
-	return err
+	return nil
 }
 
 func (pa *PodAnnotator) findImageAnnotations(imageName string, imageSha string, imageList []perceptorapi.ScannedImage) *perceptorapi.ScannedImage {

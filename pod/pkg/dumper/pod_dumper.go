@@ -51,7 +51,7 @@ type PodDumper struct {
 func NewPodDumper(core corev1.CoreV1Interface, perceptorURL string) *PodDumper {
 	return &PodDumper{
 		coreV1:     core,
-		allPodsURL: fmt.Sprintf("%s%s", perceptorURL, perceptorapi.AllPodsPath),
+		allPodsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.AllPodsPath),
 	}
 }
 
