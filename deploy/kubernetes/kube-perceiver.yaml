@@ -54,7 +54,7 @@ items:
   metadata:
     name: kube-perceiver-config
   data:
-    pod_perceiver_conf.yaml: |
+    perceiver.yaml: |
       PerceptorHost: "perceptor"
       PerceptorPort: 3001
       AnnotationIntervalSeconds: 30

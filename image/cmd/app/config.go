@@ -40,7 +40,7 @@ type ImagePerceiverConfig struct {
 func GetImagePerceiverConfig() (*ImagePerceiverConfig, error) {
 	var cfg *ImagePerceiverConfig
 
-	viper.SetConfigName("image_perceiver_conf")
+	viper.SetConfigName("perceiver")
 	viper.AddConfigPath("/etc/perceiver")
 
 	err := viper.ReadInConfig()

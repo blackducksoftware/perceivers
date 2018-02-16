@@ -60,8 +60,8 @@ func CreatePodLabels(podAnnotations *BlackDuckPodAnnotation) map[string]string {
 // CreatePodAnnotations returns a map of annotations from a BlackDuckPodAnnotation object
 func CreatePodAnnotations(podAnnotations *BlackDuckPodAnnotation) map[string]string {
 	newAnnotations := make(map[string]string)
-	vulnAnnotations := CreateBlackDuckVulnerabilityAnnotation(podAnnotations.HasVulnerabilities() == true, podAnnotations.GetVulnerabilityCount())
-	policyAnnotations := CreateBlackDuckPolicyAnnotation(podAnnotations.HasPolicyViolations() == true, podAnnotations.GetPolicyViolationCount())
+	vulnAnnotations := CreateBlackDuckVulnerabilityAnnotation(podAnnotations.HasVulnerabilities() == true, "", podAnnotations.GetVulnerabilityCount())
+	policyAnnotations := CreateBlackDuckPolicyAnnotation(podAnnotations.HasPolicyViolations() == true, "", podAnnotations.GetPolicyViolationCount())
 
 	newAnnotations["quality.pod.openshift.io/vulnerability.blackduck"] = vulnAnnotations.AsString()
 	newAnnotations["quality.pod.openshift.io/policy.blackduck"] = policyAnnotations.AsString()

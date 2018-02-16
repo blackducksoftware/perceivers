@@ -1,8 +1,8 @@
 hash: 6db2e32b08f117e517be9105a8cfb0617bbba70c7022fc3ed154fa2acfcc0dbe
-updated: 2018-02-15T11:36:49.348763675-05:00
+updated: 2018-02-16T11:14:20.671850474-05:00
 imports:
 - name: github.com/blackducksoftware/perceptor
-  version: 15def2fae7e329b141c00f44121355a4928ffd15
+  version: 199bb3291888528d227efe111ff6472062cc86d6
   repo: git@github.com:blackducksoftware/perceptor
   subpackages:
   - pkg/api

@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
-
 	"github.com/blackducksoftware/perceivers/image/pkg/mapper"
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
+	"github.com/blackducksoftware/perceivers/pkg/utils"
+
+	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -100,7 +101,8 @@ func (ic *ImageController) enqueueJob(obj interface{}) {
 }
 
 func (ic *ImageController) needsUpdate(oldObj *imageapi.Image, newObj *imageapi.Image) bool {
-	return true
+	return !utils.MapContainsBDEntries(oldObj.GetLabels(), newObj.GetLabels()) ||
+		!utils.MapContainsBDEntries(oldObj.GetAnnotations(), newObj.GetAnnotations())
 }
 
 func (ic *ImageController) runWorker() {
