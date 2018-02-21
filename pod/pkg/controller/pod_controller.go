@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/blackducksoftware/perceivers/pkg/annotations"
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
-	"github.com/blackducksoftware/perceivers/pkg/utils"
 	"github.com/blackducksoftware/perceivers/pod/pkg/mapper"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
@@ -99,6 +99,8 @@ func NewPodController(kubeClient kubernetes.Interface, perceptorURL string) *Pod
 
 // Run starts a controller that watches pods and sends them to perceptor
 func (pc *PodController) Run(threadiness int, stopCh <-chan struct{}) {
+	log.Infof("starting pod controller")
+
 	defer pc.queue.ShutDown()
 
 	go pc.podController.Run(stopCh)
@@ -126,8 +128,8 @@ func (pc *PodController) enqueueJob(obj interface{}) {
 }
 
 func (pc *PodController) needsUpdate(oldObj *v1.Pod, newObj *v1.Pod) bool {
-	return !utils.MapContainsBDEntries(oldObj.GetLabels(), newObj.GetLabels()) ||
-		!utils.MapContainsBDEntries(oldObj.GetAnnotations(), newObj.GetAnnotations())
+	return !annotations.MapContainsBlackDuckEntries(oldObj.GetLabels(), newObj.GetLabels()) ||
+		!annotations.MapContainsBlackDuckEntries(oldObj.GetAnnotations(), newObj.GetAnnotations())
 }
 
 func (pc *PodController) runWorker() {

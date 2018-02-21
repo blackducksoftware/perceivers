@@ -57,6 +57,8 @@ func NewPodAnnotator(pl corev1.CoreV1Interface, perceptorURL string) *PodAnnotat
 
 // Run starts a controller that will annotate pods
 func (pa *PodAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
+	log.Infof("starting pod annotator controller")
+
 	for {
 		select {
 		case <-stopCh:
@@ -131,8 +133,8 @@ func (pa *PodAnnotator) setAnnotationsOnPod(name string, ns string, bdPodAnnotat
 			continue
 		}
 		imageScanResults := pa.findImageAnnotations(name, sha, images)
-		imageAnnotations := pa.createImageAnnotationsFromImageScanResults(imageScanResults)
-		if imageAnnotations != nil {
+		if imageScanResults != nil {
+			imageAnnotations := pa.createImageAnnotationsFromImageScanResults(imageScanResults)
 			newAnnotations = utils.MapMerge(newAnnotations, bdannotations.CreateImageAnnotations(imageAnnotations, name, cnt))
 			newLabels = utils.MapMerge(newLabels, bdannotations.CreateImageLabels(imageAnnotations, name, cnt))
 		}
@@ -141,17 +143,17 @@ func (pa *PodAnnotator) setAnnotationsOnPod(name string, ns string, bdPodAnnotat
 	// Apply updated annotations to the pod if the existing annotations don't
 	// contain the expected entries
 	updatePod := false
-	if !utils.StringMapContains(currentAnnotations, newAnnotations) {
-		currentAnnotations = utils.MapMerge(currentAnnotations, newAnnotations)
-		kubePod.SetAnnotations(currentAnnotations)
+	if !bdannotations.MapContainsBlackDuckEntries(currentAnnotations, newAnnotations) {
+		log.Infof("annotations are missing or incorrect on pod %s.  Expected %v to contain %v", podName, currentAnnotations, newAnnotations)
+		kubePod.SetAnnotations(utils.MapMerge(currentAnnotations, newAnnotations))
 		updatePod = true
 	}
 
 	// Apply updated labels to the pod if the existing labels don't
 	// contain the expected entries
-	if !utils.StringMapContains(currentLabels, newLabels) {
-		currentLabels = utils.MapMerge(currentLabels, newLabels)
-		kubePod.SetLabels(currentLabels)
+	if !bdannotations.MapContainsBlackDuckEntries(currentLabels, newLabels) {
+		log.Infof("labels are missing or incorrect on pod %s.  Expected %v to contain %v", podName, currentLabels, newLabels)
+		kubePod.SetLabels(utils.MapMerge(currentLabels, newLabels))
 		updatePod = true
 	}
 

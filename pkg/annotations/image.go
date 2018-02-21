@@ -1,9 +1,33 @@
+/*
+Copyright (C) 2018 Black Duck Software, Inc.
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+
 package annotations
 
 import (
 	"fmt"
 	"strings"
 )
+
+// BDImageAnnotationPrefix is the prefix used for BlackDuckAnnotations in image annotations
+var BDImageAnnotationPrefix = "quality.image.openshift.io"
 
 // BlackDuckImageAnnotation describes the data model for image annotation
 type BlackDuckImageAnnotation struct {
@@ -80,7 +104,7 @@ func CreateImageAnnotations(imageAnnotations *BlackDuckImageAnnotation, name str
 		imagePrefix = fmt.Sprintf("image%d.", count)
 		imageName := strings.Replace(name, "/", ".", -1)
 		newAnnotations[fmt.Sprintf("%sblackducksoftware.com", imagePrefix)] = imageName
-		newAnnotations[fmt.Sprintf("%squality.image.openshift.io", imagePrefix)] = imageName
+		newAnnotations[fmt.Sprintf("%s%s", imagePrefix, BDImageAnnotationPrefix)] = imageName
 	}
 	/*
 		newAnnotations[fmt.Sprintf("%sblackducksoftware.com/hub-scanner-version", imagePrefix] = imageAnnotations.GetScannerVersion()
@@ -91,8 +115,8 @@ func CreateImageAnnotations(imageAnnotations *BlackDuckImageAnnotation, name str
 	vulnAnnotations := CreateBlackDuckVulnerabilityAnnotation(imageAnnotations.HasVulnerabilities() == true, imageAnnotations.GetComponentsURL(), imageAnnotations.GetVulnerabilityCount())
 	policyAnnotations := CreateBlackDuckPolicyAnnotation(imageAnnotations.HasPolicyViolations() == true, imageAnnotations.GetComponentsURL(), imageAnnotations.GetPolicyViolationCount())
 
-	newAnnotations[fmt.Sprintf("%squality.image.openshift.io/vulnerability.blackduck", imagePrefix)] = vulnAnnotations.AsString()
-	newAnnotations[fmt.Sprintf("%squality.image.openshift.io/policy.blackduck", imagePrefix)] = policyAnnotations.AsString()
+	newAnnotations[fmt.Sprintf("%s%s/vulnerability.blackduck", imagePrefix, BDImageAnnotationPrefix)] = vulnAnnotations.AsString()
+	newAnnotations[fmt.Sprintf("%s%s/policy.blackduck", imagePrefix, BDImageAnnotationPrefix)] = policyAnnotations.AsString()
 
 	return newAnnotations
 }

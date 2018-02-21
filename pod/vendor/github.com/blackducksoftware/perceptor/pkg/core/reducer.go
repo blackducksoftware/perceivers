@@ -21,25 +21,41 @@ under the License.
 
 package core
 
-type reducer struct {
-	model <-chan Model
-}
+import (
+	"fmt"
+	"reflect"
+	"time"
+)
+
+type reducer struct{}
 
 // logic
 
-func newReducer(initialModel Model, actions <-chan action) *reducer {
+func newReducer(initialModel *Model, actions <-chan action) *reducer {
 	model := initialModel
-	modelStream := make(chan Model)
+	stop := time.Now()
 	go func() {
 		for {
 			select {
 			case nextAction := <-actions:
+				// metrics: how many messages are waiting?
+				recordNumberOfMessagesInQueue(len(actions))
+
+				// metrics: log message type
+				recordMessageType(fmt.Sprintf("%s", reflect.TypeOf(nextAction)))
+
+				// metrics: how long idling since the last action finished processing?
+				start := time.Now()
+				recordReducerActivity(false, start.Sub(stop))
+
+				// actually do the work
 				model = nextAction.apply(model)
-				go func() {
-					modelStream <- model
-				}()
+
+				// metrics: how long did the work take?
+				stop = time.Now()
+				recordReducerActivity(true, stop.Sub(start))
 			}
 		}
 	}()
-	return &reducer{model: modelStream}
+	return &reducer{}
 }

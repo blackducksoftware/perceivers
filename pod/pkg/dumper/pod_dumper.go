@@ -57,6 +57,8 @@ func NewPodDumper(core corev1.CoreV1Interface, perceptorURL string) *PodDumper {
 
 // Run starts a controller that will send all pods to the perceptor periodically
 func (pd *PodDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
+	log.Infof("starting pod dumper controller")
+
 	for {
 		select {
 		case <-stopCh:
