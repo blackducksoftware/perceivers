@@ -89,7 +89,7 @@ func (pa *PodAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 		if err == nil && resp.StatusCode == 200 {
 			log.Infof("GET to %s succeeded, about to update annotations on all pods", pa.scanResultsURL)
 			for _, pod := range scanResults.Pods {
-				podAnnotations := bdannotations.NewBlackDuckPodAnnotation(pod.PolicyViolations, pod.Vulnerabilities, pod.OverallStatus)
+				podAnnotations := bdannotations.NewBlackDuckPodAnnotation(pod.PolicyViolations, pod.Vulnerabilities, pod.OverallStatus, scanResults.HubVersion, scanResults.HubScanClientVersion)
 				if err = pa.setAnnotationsOnPod(pod.Name, pod.Namespace, podAnnotations, scanResults.Images); err != nil {
 					log.Errorf("failed to annotate pod %s/%s: %v", pod.Namespace, pod.Name, err)
 				}
@@ -134,7 +134,7 @@ func (pa *PodAnnotator) setAnnotationsOnPod(name string, ns string, bdPodAnnotat
 		}
 		imageScanResults := pa.findImageAnnotations(name, sha, images)
 		if imageScanResults != nil {
-			imageAnnotations := pa.createImageAnnotationsFromImageScanResults(imageScanResults)
+			imageAnnotations := pa.createImageAnnotationsFromImageScanResults(imageScanResults, bdPodAnnotations.GetHubVersion(), bdPodAnnotations.GetScanClientVersion())
 			newAnnotations = utils.MapMerge(newAnnotations, bdannotations.CreateImageAnnotations(imageAnnotations, name, cnt))
 			newLabels = utils.MapMerge(newLabels, bdannotations.CreateImageLabels(imageAnnotations, name, cnt))
 		}
@@ -179,7 +179,7 @@ func (pa *PodAnnotator) findImageAnnotations(imageName string, imageSha string, 
 	return nil
 }
 
-func (pa *PodAnnotator) createImageAnnotationsFromImageScanResults(scannedImage *perceptorapi.ScannedImage) *bdannotations.BlackDuckImageAnnotation {
+func (pa *PodAnnotator) createImageAnnotationsFromImageScanResults(scannedImage *perceptorapi.ScannedImage, hv string, scv string) *bdannotations.BlackDuckImageAnnotation {
 	return bdannotations.NewBlackDuckImageAnnotation(scannedImage.PolicyViolations,
-		scannedImage.Vulnerabilities, scannedImage.OverallStatus, scannedImage.ComponentsURL)
+		scannedImage.Vulnerabilities, scannedImage.OverallStatus, scannedImage.ComponentsURL, hv, scv)
 }

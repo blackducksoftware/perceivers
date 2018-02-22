@@ -25,18 +25,18 @@ import (
 	"strings"
 )
 
-// MapContainsBlackDuckEntries returns true if the newMap contains all the important
-// blackduck entries from the origMap
+// MapContainsBlackDuckEntries returns true if the origMap contains all the important
+// blackduck entries from the newMap
 func MapContainsBlackDuckEntries(origMap map[string]string, newMap map[string]string) bool {
 	important := make(map[string]string)
 
-	for k, v := range origMap {
+	for k, v := range newMap {
 		if strings.Contains(k, "blackduck") || strings.Contains(k, BDImageAnnotationPrefix) {
 			important[k] = v
 		}
 	}
 
-	return StringMapContains(newMap, important)
+	return StringMapContains(origMap, important)
 }
 
 // StringMapContains will return true all the key/value pairs in subset
