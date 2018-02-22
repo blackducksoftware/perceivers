@@ -23,19 +23,25 @@ package annotations
 
 import (
 	"encoding/json"
-	"fmt"
+	"reflect"
 	"time"
 )
+
+type summaryEntry struct {
+	Label         string `json:"label"`
+	Score         int    `json:"score"`
+	SeverityIndex int    `json:"severityIndex"`
+}
 
 // BlackDuckAnnotation create annotations that correspong to the
 // Openshift Containr Security guide (https://people.redhat.com/aweiteka/docs/preview/20170510/security/container_content.html)
 type BlackDuckAnnotation struct {
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	Timestamp   time.Time         `json:"timestamp"`
-	Reference   string            `json:"reference"`
-	Compliant   bool              `json:"compliant"`
-	Summary     map[string]string `json:"summary"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Timestamp   int64          `json:"timestamp"`
+	Reference   string         `json:"reference"`
+	Compliant   bool           `json:"compliant"`
+	Summary     []summaryEntry `json:"summary"`
 }
 
 // AsString makes a map corresponding to the Openshift
@@ -61,8 +67,8 @@ func (bda *BlackDuckAnnotation) Compare(newBda *BlackDuckAnnotation) bool {
 	if bda.Compliant != newBda.Compliant {
 		return false
 	}
-	for k, v := range bda.Summary {
-		if newBda.Summary[k] != v {
+	for pos, summaryEntry := range bda.Summary {
+		if !reflect.DeepEqual(summaryEntry, newBda.Summary[pos]) {
 			return false
 		}
 	}
@@ -88,13 +94,15 @@ func CreateBlackDuckVulnerabilityAnnotation(hasVulns bool, url string, vulnCount
 	return &BlackDuckAnnotation{
 		"blackducksoftware",
 		"Vulnerability Info",
-		time.Now(),
+		time.Now().Unix(),
 		url,
 		!hasVulns, // no vunls -> compliant.
-		map[string]string{
-			"label":         "high",
-			"score":         fmt.Sprintf("%d", vulnCount),
-			"severityIndex": fmt.Sprintf("%v", 1),
+		[]summaryEntry{
+			{
+				Label:         "high",
+				Score:         vulnCount,
+				SeverityIndex: 1,
+			},
 		},
 	}
 }
@@ -105,13 +113,15 @@ func CreateBlackDuckPolicyAnnotation(hasPolicyViolations bool, url string, polic
 	return &BlackDuckAnnotation{
 		"blackducksoftware",
 		"Policy Info",
-		time.Now(),
+		time.Now().Unix(),
 		url,
 		!hasPolicyViolations, // no violations -> compliant
-		map[string]string{
-			"label":         "important",
-			"score":         fmt.Sprintf("%d", policyCount),
-			"severityIndex": fmt.Sprintf("%v", 1),
+		[]summaryEntry{
+			{
+				Label:         "important",
+				Score:         policyCount,
+				SeverityIndex: 1,
+			},
 		},
 	}
 }
