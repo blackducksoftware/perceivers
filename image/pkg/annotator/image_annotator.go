@@ -91,7 +91,7 @@ func (ia *ImageAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 		if err == nil && resp.StatusCode == 200 {
 			log.Infof("GET to %s succeeded, about to update annotations on all images", ia.scanResultsURL)
 			for _, image := range scanResults.Images {
-				imageAnnotations := bdannotations.NewBlackDuckImageAnnotation(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL)
+				imageAnnotations := bdannotations.NewBlackDuckImageAnnotation(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL, scanResults.HubVersion, scanResults.HubScanClientVersion)
 				if err = ia.setAnnotationsOnImage(image.Name, image.Sha, imageAnnotations); err != nil {
 					log.Errorf("failed to annotate image %s@sha256%s: %v", image.Name, image.Sha, err)
 				}

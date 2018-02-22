@@ -35,15 +35,19 @@ type BlackDuckImageAnnotation struct {
 	vulnerabilityCount   int
 	overallStatus        string
 	componentsURL        string
+	hubVersion           string
+	scanClientVersion    string
 }
 
 // NewBlackDuckImageAnnotation creates a new BlackDuckImageAnnotation object
-func NewBlackDuckImageAnnotation(policyViolationCount int, vulnerabilityCount int, overallStatus string, url string) *BlackDuckImageAnnotation {
+func NewBlackDuckImageAnnotation(policyViolationCount int, vulnerabilityCount int, overallStatus string, url string, hubVersion string, scVersion string) *BlackDuckImageAnnotation {
 	return &BlackDuckImageAnnotation{
 		policyViolationCount: policyViolationCount,
 		vulnerabilityCount:   vulnerabilityCount,
 		overallStatus:        overallStatus,
 		componentsURL:        url,
+		hubVersion:           hubVersion,
+		scanClientVersion:    scVersion,
 	}
 }
 
@@ -77,6 +81,16 @@ func (bdia *BlackDuckImageAnnotation) GetOverallStatus() string {
 	return bdia.overallStatus
 }
 
+// GetHubVersion returns the version of the hub that provided the information
+func (bdia *BlackDuckImageAnnotation) GetHubVersion() string {
+	return bdia.hubVersion
+}
+
+// GetScanClientVersion returns the version of the scan client used to scan the image
+func (bdia *BlackDuckImageAnnotation) GetScanClientVersion() string {
+	return bdia.scanClientVersion
+}
+
 // CreateImageLabels returns a map of labels from a BlackDuckImageAnnotation object
 func CreateImageLabels(imageAnnotations *BlackDuckImageAnnotation, name string, count int) map[string]string {
 	imagePostfix := ""
@@ -106,10 +120,8 @@ func CreateImageAnnotations(imageAnnotations *BlackDuckImageAnnotation, name str
 		newAnnotations[fmt.Sprintf("%sblackducksoftware.com", imagePrefix)] = imageName
 		newAnnotations[fmt.Sprintf("%s%s", imagePrefix, BDImageAnnotationPrefix)] = imageName
 	}
-	/*
-		newAnnotations[fmt.Sprintf("%sblackducksoftware.com/hub-scanner-version", imagePrefix] = imageAnnotations.GetScannerVersion()
-		newAnnotations[fmt.Sprintf("%sblackducksoftware.com/attestation-hub-server", imagePrefix] = imageAnnotations.GetHubServer()
-	*/
+	newAnnotations[fmt.Sprintf("%sblackducksoftware.com/hub-scanner-version", imagePrefix)] = imageAnnotations.GetScanClientVersion()
+	newAnnotations[fmt.Sprintf("%sblackducksoftware.com/attestation-hub-server", imagePrefix)] = imageAnnotations.GetHubVersion()
 	newAnnotations[fmt.Sprintf("%sblackducksoftware.com/project-endpoint", imagePrefix)] = imageAnnotations.GetComponentsURL()
 
 	vulnAnnotations := CreateBlackDuckVulnerabilityAnnotation(imageAnnotations.HasVulnerabilities() == true, imageAnnotations.GetComponentsURL(), imageAnnotations.GetVulnerabilityCount())

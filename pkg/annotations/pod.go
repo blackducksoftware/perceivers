@@ -33,14 +33,18 @@ type BlackDuckPodAnnotation struct {
 	policyViolationCount int
 	vulnerabilityCount   int
 	overallStatus        string
+	hubVersion           string
+	scanClientVersion    string
 }
 
 // NewBlackDuckPodAnnotation creates a new BlackDuckPodAnnotation object
-func NewBlackDuckPodAnnotation(policyViolationCount int, vulnerabilityCount int, overallStatus string) *BlackDuckPodAnnotation {
+func NewBlackDuckPodAnnotation(policyViolationCount int, vulnerabilityCount int, overallStatus string, hubVersion string, scVersion string) *BlackDuckPodAnnotation {
 	return &BlackDuckPodAnnotation{
 		policyViolationCount: policyViolationCount,
 		vulnerabilityCount:   vulnerabilityCount,
 		overallStatus:        overallStatus,
+		hubVersion:           hubVersion,
+		scanClientVersion:    scVersion,
 	}
 }
 
@@ -67,6 +71,16 @@ func (bdpa *BlackDuckPodAnnotation) GetPolicyViolationCount() int {
 // GetOverallStatus returns the pod overall status
 func (bdpa *BlackDuckPodAnnotation) GetOverallStatus() string {
 	return bdpa.overallStatus
+}
+
+// GetHubVersion returns the version of the hub that provided the information
+func (bdpa *BlackDuckPodAnnotation) GetHubVersion() string {
+	return bdpa.hubVersion
+}
+
+// GetScanClientVersion returns the version of the scan client used to scan the images
+func (bdpa *BlackDuckPodAnnotation) GetScanClientVersion() string {
+	return bdpa.scanClientVersion
 }
 
 // CreatePodLabels returns a map of labels from a BlackDuckPodAnnotation object
