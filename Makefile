@@ -1,14 +1,12 @@
 SUBDIRS = pod image
 
-.PHONY: $(SUBDIRS) clean
+.PHONY: $(SUBDIRS) clean build local_build container push test
 
 all: build
 
-build: outputdir $(SUBDIRS)
-	cp */_output/* _output
+build: $(SUBDIRS)
 
-outputdir:
-	mkdir -p _output
+local_build: $(SUBDIRS)
 
 container: $(SUBDIRS)
 
