@@ -1,0 +1,21 @@
+steps:
+- name: 'gcr.io/cloud-builders/go'
+  args: ['build', '-o', './image/cmd/image-perceiver', './image/cmd/image-perceiver.go']
+  env:
+  - 'PROJECT_ROOT=github.com/blackducksoftware/perceivers'
+  - 'CGO_ENABLED=0'
+  - 'GOOS=linux'
+  - 'GOARCH=amd64'
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/image-perceiver:latest', './image/cmd/.']
+images: ['gcr.io/$PROJECT_ID/blackducksoftware/image-perceiver:latest']
+- name: 'gcr.io/cloud-builders/go'
+  args: ['build', '-o', './pod/cmd/pod-perceiver', './pod/cmd/pod-perceiver.go']
+  env:
+  - 'PROJECT_ROOT=github.com/blackducksoftware/perceivers'
+  - 'CGO_ENABLED=0'
+  - 'GOOS=linux'
+  - 'GOARCH=amd64'
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/pod-perceiver:latest', './pod/cmd/.']
+images: ['gcr.io/$PROJECT_ID/blackducksoftware/pod-perceiver:latest']
