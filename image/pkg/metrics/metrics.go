@@ -19,28 +19,25 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package mapper
+package metrics
 
 import (
-	"fmt"
-
-	"github.com/blackducksoftware/perceivers/pkg/docker"
-
-	metrics "github.com/blackducksoftware/perceivers/image/pkg/metrics"
-	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
-
-	imageapi "github.com/openshift/api/image/v1"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-// NewPerceptorImageFromOSImage will convert an openshift image object to a
-// perceptor image object
-func NewPerceptorImageFromOSImage(image *imageapi.Image) (*perceptorapi.Image, error) {
-	dockerRef := image.DockerImageReference
-	name, sha, err := docker.ParseImageIDString(dockerRef)
-	if err != nil {
-		metrics.RecordError("mapper", "unable to parse openshift imageId")
-		return nil, fmt.Errorf("unable to parse openshift imageID %s: %v", dockerRef, err)
-	}
+var errorsCounter *prometheus.CounterVec
 
-	return perceptorapi.NewImage(name, sha, dockerRef), nil
+func RecordError(category string, errorName string) {
+	errorsCounter.With(prometheus.Labels{"category": category, "errorName": errorName}).Inc()
+}
+
+func init() {
+	errorsCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "perceptor",
+		Subsystem: "perceivers",
+		Name:      "imageErrors",
+		Help:      "error codes from images",
+	}, []string{"category", "errorName"})
+
+	prometheus.MustRegister(errorsCounter)
 }

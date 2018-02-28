@@ -29,6 +29,7 @@ import (
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
 	"github.com/blackducksoftware/perceivers/image/pkg/mapper"
+	"github.com/blackducksoftware/perceivers/image/pkg/metrics"
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -136,6 +137,7 @@ func (osisc *OSImageStreamController) processNextWorkItem() bool {
 
 	key, ok := keyObj.(*imageapi.ImageStream)
 	if !ok {
+		metrics.RecordError("controller", "key wasn't an imagestream")
 		utilruntime.HandleError(fmt.Errorf("key wasn't an imagestream"))
 		return true
 	}
@@ -143,6 +145,7 @@ func (osisc *OSImageStreamController) processNextWorkItem() bool {
 	// do your work on the key.  This method will contains your "do stuff" logic
 	err := osisc.syncHandler(key)
 	if err == nil {
+		metrics.RecordError("controller", "unable to call sync handler")
 		// if you had no error, tell the queue to stop tracking history for your key.  This will
 		// reset things like failure counts for per-item rate limiting
 		osisc.queue.Forget(key)
@@ -166,15 +169,20 @@ func (osisc *OSImageStreamController) processImageStream(obj *imageapi.ImageStre
 	errList := []string{}
 	// Get an updated version of this imagestream if it exists
 	is, err := osisc.imageStreamLister.ImageStreams(metav1.NamespaceAll).Get(obj.GetName())
+	if err != nil {
+		metrics.RecordError("controller", "unable to get update version of imagestream")
+	}
 	if errors.IsNotFound(err) {
 		// ImageStream doesn't exist (anymore), so this is a delete event
 		images, err := osisc.getImagesFromImageStream(obj)
 		if err != nil {
+			metrics.RecordError("controller", "unable to get images from imagestream")
 			return err
 		}
 		for _, image := range images {
 			err = communicator.SendPerceptorDeleteEvent(osisc.imageURL, image.Name)
 			if err != nil {
+				metrics.RecordError("controller", "unable to send perceptor delete event")
 				errList = append(errList, err.Error())
 			}
 		}
@@ -185,11 +193,13 @@ func (osisc *OSImageStreamController) processImageStream(obj *imageapi.ImageStre
 
 	images, err := osisc.getImagesFromImageStream(is)
 	if err != nil {
+		metrics.RecordError("controller", "unable to get images from imagestream")
 		return err
 	}
 	for _, image := range images {
 		err = communicator.SendPerceptorAddEvent(osisc.imageURL, image)
 		if err != nil {
+			metrics.RecordError("controller", "unable to send perceptor add event")
 			errList = append(errList, err.Error())
 		}
 	}
@@ -199,6 +209,7 @@ func (osisc *OSImageStreamController) processImageStream(obj *imageapi.ImageStre
 func (osisc *OSImageStreamController) getImagesFromImageStream(stream *imageapi.ImageStream) ([]*perceptorapi.Image, error) {
 	tags := stream.Status.Tags
 	if tags == nil {
+		metrics.RecordError("controller", "image stream has no tags")
 		return nil, fmt.Errorf("image stream %s has no tags", stream.GetName())
 	}
 
@@ -208,6 +219,7 @@ func (osisc *OSImageStreamController) getImagesFromImageStream(stream *imageapi.
 		ref := events.Items[0].Image
 		image, err := osisc.client.Images().Get(ref, metav1.GetOptions{})
 		if err != nil {
+			metrics.RecordError("controller", "error getting image")
 			return nil, fmt.Errorf("error getting image %s@%s: %v", digest, ref, err)
 		}
 

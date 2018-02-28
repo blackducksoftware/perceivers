@@ -23,8 +23,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/blackducksoftware/perceivers/image/cmd/app"
+	"github.com/prometheus/client_golang/prometheus"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -36,6 +38,9 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to read config: %v", err))
 	}
+
+	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
+	prometheus.Unregister(prometheus.NewGoCollector())
 
 	// Create the Image Perceiver
 	perceiver, err := app.NewImagePerceiver(config)

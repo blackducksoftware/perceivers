@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blackducksoftware/perceivers/image/pkg/metrics"
 	bdannotations "github.com/blackducksoftware/perceivers/pkg/annotations"
 	"github.com/blackducksoftware/perceivers/pkg/docker"
 	"github.com/blackducksoftware/perceivers/pkg/utils"
@@ -74,6 +75,7 @@ func (ia *ImageAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 		log.Infof("attempting to GET %s for image annotation", ia.scanResultsURL)
 		resp, err := http.Get(ia.scanResultsURL)
 		if err != nil {
+			metrics.RecordError("annotator", "unable to create GET image request")
 			log.Errorf("unable to GET %s for image annotation: %v", ia.scanResultsURL, err)
 			continue
 		}
@@ -81,6 +83,7 @@ func (ia *ImageAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
+			metrics.RecordError("annotator", "unable to read response body")
 			log.Errorf("unable to read resp body from %s: %v", ia.scanResultsURL, err)
 			continue
 		}
@@ -93,10 +96,12 @@ func (ia *ImageAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 			for _, image := range scanResults.Images {
 				imageAnnotations := bdannotations.NewBlackDuckImageAnnotation(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL, scanResults.HubVersion, scanResults.HubScanClientVersion)
 				if err = ia.setAnnotationsOnImage(image.Name, image.Sha, imageAnnotations); err != nil {
+					metrics.RecordError("annotator", "unable to set annotations on image")
 					log.Errorf("failed to annotate image %s@sha256%s: %v", image.Name, image.Sha, err)
 				}
 			}
 		} else {
+			metrics.RecordError("annotator", "unable to unmarshal ScanResults")
 			log.Errorf("unable to unmarshal ScanResults from url %s: %v", ia.scanResultsURL, err)
 		}
 	}
@@ -116,6 +121,9 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 
 	// Get the image
 	image, err := ia.client.Images().Get(getName, metav1.GetOptions{})
+	if err != nil {
+		metrics.RecordError("annotator", "unable to get the image")
+	}
 	if errors.IsNotFound(err) {
 		// This isn't an image in openshift
 		return nil
@@ -128,6 +136,7 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 	// Verify the sha of the scanned image matches that of the image we retrieved
 	_, imageSha, err := docker.ParseImageIDString(image.DockerImageReference)
 	if err != nil {
+		metrics.RecordError("annotator", "unable to parse the imageID")
 		return fmt.Errorf("unable to parse openshift imageID from image %s: %v", imageName, err)
 	}
 	if imageSha != sha {
@@ -171,6 +180,7 @@ func (ia *ImageAnnotator) setAnnotationsOnImage(name string, sha string, bdImage
 	if updateImage {
 		_, err = ia.client.Images().Update(image)
 		if err != nil {
+			metrics.RecordError("annotator", "unable to update the image")
 			return fmt.Errorf("unable to update annotations/labels for image %s: %v", fullImageName, err)
 		}
 		log.Infof("successfully annotated image %s", fullImageName)

@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/perceivers/image/pkg/mapper"
+	"github.com/blackducksoftware/perceivers/image/pkg/metrics"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
@@ -69,6 +70,7 @@ func (id *ImageDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
 		// Get all the images in the format pereptor uses
 		images, err := id.getAllImagesAsPerceptorImages()
 		if err != nil {
+			// error already recorded by other func
 			log.Errorf("unable to get all images: %v", err)
 			continue
 		}
@@ -76,6 +78,7 @@ func (id *ImageDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
 
 		jsonBytes, err := json.Marshal(perceptorapi.NewAllImages(images))
 		if err != nil {
+			metrics.RecordError("dumper", "unable to serialize all images")
 			log.Errorf("unable to serialize all images: %v", err)
 			continue
 		}
@@ -83,12 +86,14 @@ func (id *ImageDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
 		// Send all the image information to the perceptor
 		req, err := http.NewRequest("PUT", id.allImagesURL, bytes.NewBuffer(jsonBytes))
 		if err != nil {
+			metrics.RecordError("dumper", "unable to create PUT request for all images")
 			log.Errorf("unable to create PUT request for %s: %v", id.allImagesURL, err)
 			continue
 		}
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
+			metrics.RecordError("dumper", "unable to issue PUT for all images")
 			log.Errorf("unable to PUT to %s: %v", id.allImagesURL, err)
 			continue
 		}
@@ -96,6 +101,7 @@ func (id *ImageDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
 		if resp.StatusCode == 200 {
 			log.Infof("http POST request to %s succeeded", id.allImagesURL)
 		} else {
+			metrics.RecordError("dumper", "unable to PUT for all images")
 			log.Errorf("http POST request to %s failed with status code %d", id.allImagesURL, resp.StatusCode)
 		}
 	}
@@ -107,6 +113,7 @@ func (id *ImageDumper) getAllImagesAsPerceptorImages() ([]perceptorapi.Image, er
 	// Get all images from openshift
 	images, err := id.client.Images().List(metav1.ListOptions{})
 	if err != nil {
+		metrics.RecordError("dumper", "unable to list all images")
 		return nil, err
 	}
 
@@ -114,6 +121,7 @@ func (id *ImageDumper) getAllImagesAsPerceptorImages() ([]perceptorapi.Image, er
 	for _, image := range images.Items {
 		perceptorImage, err := mapper.NewPerceptorImageFromOSImage(&image)
 		if err != nil {
+			// error already recorded by mapper
 			return nil, err
 		}
 		perceptorImages = append(perceptorImages, *perceptorImage)
