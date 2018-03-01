@@ -22,62 +22,59 @@ under the License.
 package docker
 
 import (
+	"fmt"
 	"testing"
 )
 
-func TestParseImageID(t *testing.T) {
-	name, sha, err := ParseImageIDString("docker-pullable://registry.kipp.blackducksoftware.com/blackducksoftware/hub-registration@sha256:cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043")
-	//	name, sha, err := ParseImageIDString("docker-pullable://r.k/h@sha256:cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043")
-	if err != nil {
-		t.Errorf("expected no error, found %s", err.Error())
-		t.Fail()
+func TestParseImageIDString(t *testing.T) {
+	testcases := []struct {
+		description string
+		prefix      string
+		name        string
+		sha         string
+		shouldPass  bool
+	}{
+		{
+			description: "valid image name",
+			prefix:      "docker-pullable://",
+			name:        "abc/def",
+			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
+			shouldPass:  true,
+		},
+		{
+			description: "no prefix",
+			prefix:      "",
+			name:        "abc/def",
+			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
+			shouldPass:  true,
+		},
+		{
+			description: "missing image name",
+			prefix:      "",
+			name:        "",
+			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
+			shouldPass:  false,
+		},
+		{
+			description: "missing sha",
+			prefix:      "",
+			name:        "abc/def",
+			sha:         "",
+			shouldPass:  false,
+		},
 	}
-	if name != "registry.kipp.blackducksoftware.com/blackducksoftware/hub-registration" {
-		t.Errorf("incorrect name, got %s", name)
-		t.Fail()
-	}
-	if sha != "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043" {
-		t.Errorf("incorrect sha, got %s", sha)
-		t.Fail()
-	}
-}
 
-func TestParseImageIDFail(t *testing.T) {
-	name, tag, err := ParseImageIDString("abc")
-	if err == nil {
-		t.Errorf("expected error, found nil")
-		t.Fail()
-	}
-	if err.Error() != "could not find prefix <docker-pullable://> in <abc>" {
-		t.Errorf("incorrect error message: %s", err.Error())
-		t.Fail()
-	}
-	if name != "" {
-		t.Errorf("incorrect name: %s", name)
-		t.Fail()
-	}
-	if tag != "" {
-		t.Errorf("incorrect tag %s", tag)
-		t.Fail()
-	}
-}
-
-func TestParseImageIDFailMissingSha(t *testing.T) {
-	name, tag, err := ParseImageIDString("docker-pullable://abc")
-	if err == nil {
-		t.Errorf("expected error, found nil")
-		t.Fail()
-	}
-	if err.Error() != "unable to match digestRegexp regex <@sha256:([a-zA-Z0-9]+)$> to input <abc>" {
-		t.Errorf("incorrect error message: %s", err.Error())
-		t.Fail()
-	}
-	if name != "" {
-		t.Errorf("incorrect name: %s", name)
-		t.Fail()
-	}
-	if tag != "" {
-		t.Errorf("incorrect tag %s", tag)
-		t.Fail()
+	for _, tc := range testcases {
+		imageID := fmt.Sprintf("%s%s@sha256:%s", tc.prefix, tc.name, tc.sha)
+		name, sha, err := ParseImageIDString(imageID)
+		if err != nil && tc.shouldPass {
+			t.Errorf("[%s] unexpected error: %v, imageID %s", tc.description, err, imageID)
+		}
+		if name != tc.name && tc.shouldPass {
+			t.Errorf("[%s] name is wrong.  Expected %s got %s", tc.description, tc.name, name)
+		}
+		if sha != tc.sha && tc.shouldPass {
+			t.Errorf("[%s] sha is wrong.  Expected %s got %s", tc.description, tc.sha, sha)
+		}
 	}
 }

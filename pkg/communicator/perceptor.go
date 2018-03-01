@@ -25,6 +25,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -63,6 +64,45 @@ func SendPerceptorDeleteEvent(dest string, name string) error {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("http DELETE request to %s failed with status code %d", dest, resp.StatusCode)
+	}
+	return nil
+}
+
+// GetPerceptorScanResults will get scan results from the perceptor located at
+// the provided url
+func GetPerceptorScanResults(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("unable to GET %s for pod annotation: %v", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("failed to GET %s.  Got %d instead of 200", url, resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read resp body from %s: %v", url, err)
+	}
+
+	return body, nil
+}
+
+// SendPerceptorData will send the given data to the provided url
+func SendPerceptorData(url string, data []byte) error {
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
+	if err != nil {
+		return fmt.Errorf("unable to create PUT request for %s: %v", url, err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("unable to PUT to %s: %v", url, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("http POST request to %s failed with status code %d", url, resp.StatusCode)
 	}
 	return nil
 }

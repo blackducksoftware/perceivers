@@ -22,12 +22,11 @@ under the License.
 package dumper
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
+	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	"github.com/blackducksoftware/perceivers/pod/pkg/mapper"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
@@ -83,22 +82,11 @@ func (pd *PodDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
 		}
 
 		// Send all the pod information to the perceptor
-		req, err := http.NewRequest("PUT", pd.allPodsURL, bytes.NewBuffer(jsonBytes))
+		err = communicator.SendPerceptorData(pd.allPodsURL, jsonBytes)
 		if err != nil {
-			log.Errorf("unable to create PUT request for %s: %v", pd.allPodsURL, err)
-			continue
-		}
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			log.Errorf("unable to PUT to %s: %v", pd.allPodsURL, err)
-			continue
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == 200 {
-			log.Infof("http POST request to %s succeeded", pd.allPodsURL)
+			log.Errorf("failed to send pods: %v", err)
 		} else {
-			log.Errorf("http POST request to %s failed with status code %d", pd.allPodsURL, resp.StatusCode)
+			log.Infof("http POST request to %s succeeded", pd.allPodsURL)
 		}
 	}
 }

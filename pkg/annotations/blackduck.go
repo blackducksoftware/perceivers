@@ -76,9 +76,9 @@ func (bda *BlackDuckAnnotation) Compare(newBda *BlackDuckAnnotation) bool {
 	return true
 }
 
-// NewBlackDuckAnnotationFromStringJSON takes a string that is a marshaled
+// NewBlackDuckAnnotationFromJSON takes a string that is a marshaled
 // BlackDuckAnnotation struct and returns a BlackDuckAnnotation
-func NewBlackDuckAnnotationFromStringJSON(data string) (*BlackDuckAnnotation, error) {
+func NewBlackDuckAnnotationFromJSON(data string) (*BlackDuckAnnotation, error) {
 	bda := BlackDuckAnnotation{}
 	err := json.Unmarshal([]byte(data), &bda)
 	if err != nil {
@@ -126,16 +126,16 @@ func CreateBlackDuckPolicyAnnotation(hasPolicyViolations bool, url string, polic
 	}
 }
 
-// CompareBlackDuckAnnotationJSONStrings takes 2 strings that are marshaled
+// CompareBlackDuckAnnotationJSON takes 2 strings that are marshaled
 // BlackDuckAnnotations and compares them.  Returns true if the unmarshaling
 // is successful and the values are the same.
-func CompareBlackDuckAnnotationJSONStrings(old string, new string) bool {
-	bda1, err := NewBlackDuckAnnotationFromStringJSON(old)
+func CompareBlackDuckAnnotationJSON(old string, new string) bool {
+	bda1, err := NewBlackDuckAnnotationFromJSON(old)
 	if err != nil {
 		return false
 	}
 
-	bda2, err := NewBlackDuckAnnotationFromStringJSON(new)
+	bda2, err := NewBlackDuckAnnotationFromJSON(new)
 	if err != nil {
 		return false
 	}

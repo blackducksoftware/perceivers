@@ -22,13 +22,12 @@ under the License.
 package dumper
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/blackducksoftware/perceivers/image/pkg/mapper"
+	"github.com/blackducksoftware/perceivers/pkg/communicator"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
@@ -41,12 +40,12 @@ import (
 
 // ImageDumper handles sending all images to the perceptor periodically
 type ImageDumper struct {
-	client       *imageclient.ImageV1Client
+	client       imageclient.ImageV1Interface
 	allImagesURL string
 }
 
 // NewImageDumper creates a new ImageDumper object
-func NewImageDumper(ic *imageclient.ImageV1Client, perceptorURL string) *ImageDumper {
+func NewImageDumper(ic imageclient.ImageV1Interface, perceptorURL string) *ImageDumper {
 	return &ImageDumper{
 		client:       ic,
 		allImagesURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.AllImagesPath),
@@ -81,22 +80,11 @@ func (id *ImageDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
 		}
 
 		// Send all the image information to the perceptor
-		req, err := http.NewRequest("PUT", id.allImagesURL, bytes.NewBuffer(jsonBytes))
+		err = communicator.SendPerceptorData(id.allImagesURL, jsonBytes)
 		if err != nil {
-			log.Errorf("unable to create PUT request for %s: %v", id.allImagesURL, err)
-			continue
-		}
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			log.Errorf("unable to PUT to %s: %v", id.allImagesURL, err)
-			continue
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == 200 {
-			log.Infof("http POST request to %s succeeded", id.allImagesURL)
+			log.Errorf("failed to send images: %v", err)
 		} else {
-			log.Errorf("http POST request to %s failed with status code %d", id.allImagesURL, resp.StatusCode)
+			log.Infof("http POST request to %s succeeded", id.allImagesURL)
 		}
 	}
 }
