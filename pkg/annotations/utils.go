@@ -47,7 +47,7 @@ func StringMapContains(bigMap map[string]string, subset map[string]string) bool 
 			return false
 		} else if strings.Contains(k, BDImageAnnotationPrefix) || strings.Contains(k, BDPodAnnotationPrefix) {
 			// These keys can be either a BlackDuckAnnotation or just a string
-			if !CompareBlackDuckAnnotationJSONStrings(bigMap[k], v) && val != v {
+			if !CompareBlackDuckAnnotationJSON(bigMap[k], v) && val != v {
 				return false
 			}
 		} else if val != v {
