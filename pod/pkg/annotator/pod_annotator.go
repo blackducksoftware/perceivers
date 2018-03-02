@@ -69,18 +69,25 @@ func (pa *PodAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 
 		time.Sleep(interval)
 
-		// Get all the scan results from the Perceptor
-		log.Infof("attempting to GET %s for pod annotation", pa.scanResultsURL)
-		scanResults, err := pa.getScanResults()
-		if err == nil {
-			log.Errorf("error getting scan results: %v", err)
-			continue
+		err := pa.annotate()
+		if err != nil {
+			log.Errorf("failed to annotate pods: %v", err)
 		}
-
-		// Process the scan results and apply annotations/labels to pods
-		log.Infof("GET to %s succeeded, about to update annotations on all pods", pa.scanResultsURL)
-		pa.addAnnotationsToPods(*scanResults)
 	}
+}
+
+func (pa *PodAnnotator) annotate() error {
+	// Get all the scan results from the Perceptor
+	log.Infof("attempting to get scan results with GET %s for pod annotation", pa.scanResultsURL)
+	scanResults, err := pa.getScanResults()
+	if err != nil {
+		return fmt.Errorf("error getting scan results: %v", err)
+	}
+
+	// Process the scan results and apply annotations/labels to pods
+	log.Infof("GET to %s succeeded, about to update annotations on all pods", pa.scanResultsURL)
+	pa.addAnnotationsToPods(*scanResults)
+	return nil
 }
 
 func (pa *PodAnnotator) getScanResults() (*perceptorapi.ScanResults, error) {

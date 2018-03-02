@@ -71,18 +71,25 @@ func (ia *ImageAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 
 		time.Sleep(interval)
 
-		// Get all the scan results from the Perceptor
-		log.Infof("attempting to GET %s for image annotation", ia.scanResultsURL)
-		scanResults, err := ia.getScanResults()
-		if err == nil {
-			log.Errorf("error getting scan results: %v", err)
-			continue
+		err := ia.annotate()
+		if err != nil {
+			log.Errorf("failed to annotate images: %v", err)
 		}
-
-		// Process the scan results and apply annotations/labels to images
-		log.Infof("GET to %s succeeded, about to update annotations on all images", ia.scanResultsURL)
-		ia.addAnnotationsToImages(*scanResults)
 	}
+}
+
+func (ia *ImageAnnotator) annotate() error {
+	// Get all the scan results from the Perceptor
+	log.Infof("attempting to GET %s for image annotation", ia.scanResultsURL)
+	scanResults, err := ia.getScanResults()
+	if err != nil {
+		return fmt.Errorf("error getting scan results: %v", err)
+	}
+
+	// Process the scan results and apply annotations/labels to images
+	log.Infof("GET to %s succeeded, about to update annotations on all images", ia.scanResultsURL)
+	ia.addAnnotationsToImages(*scanResults)
+	return nil
 }
 
 func (ia *ImageAnnotator) getScanResults() (*perceptorapi.ScanResults, error) {
