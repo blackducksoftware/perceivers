@@ -279,3 +279,47 @@ func TestAddPodLabels(t *testing.T) {
 		}
 	}
 }
+
+func TestAnnotate(t *testing.T) {
+	testcases := []struct {
+		description string
+		statusCode  int
+		body        *perceptorapi.ScanResults
+		shouldPass  bool
+	}{
+		{
+			description: "successful GET with empty results",
+			statusCode:  200,
+			body:        &perceptorapi.ScanResults{},
+			shouldPass:  true,
+		},
+		{
+			description: "failed to annotate",
+			statusCode:  401,
+			body:        nil,
+			shouldPass:  false,
+		},
+	}
+	endpoint := "RESTEndpoint"
+	for _, tc := range testcases {
+		bytes, _ := json.Marshal(tc.body)
+		handler := utils.FakeHandler{
+			StatusCode:  tc.statusCode,
+			RespondBody: string(bytes),
+			T:           t,
+		}
+		server := httptest.NewServer(&handler)
+		defer server.Close()
+
+		annotator := ImageAnnotator{
+			scanResultsURL: fmt.Sprintf("%s/%s", server.URL, endpoint),
+		}
+		err := annotator.annotate()
+		if err != nil && tc.shouldPass {
+			t.Fatalf("[%s] unexpected error: %v", tc.description, err)
+		}
+		if err == nil && !tc.shouldPass {
+			t.Errorf("[%s] expected error but didn't receive one", tc.description)
+		}
+	}
+}
