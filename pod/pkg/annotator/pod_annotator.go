@@ -108,7 +108,7 @@ func (pa *PodAnnotator) getScanResults() (*perceptorapi.ScanResults, error) {
 
 func (pa *PodAnnotator) addAnnotationsToPods(results perceptorapi.ScanResults) {
 	for _, pod := range results.Pods {
-		podName := fmt.Sprintf("%s:%s", pod.Name, pod.Namespace)
+		podName := fmt.Sprintf("%s:%s", pod.Namespace, pod.Name)
 		kubePod, err := pa.coreV1.Pods(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
 		if err != nil {
 			log.Errorf("unable to get pod %s: %v", podName, err)
@@ -131,7 +131,7 @@ func (pa *PodAnnotator) addAnnotationsToPods(results perceptorapi.ScanResults) {
 }
 
 func (pa *PodAnnotator) addPodAnnotations(pod *v1.Pod, podAnnotations *bdannotations.BlackDuckPodAnnotation, images []perceptorapi.ScannedImage) bool {
-	podName := fmt.Sprintf("%s/%s", pod.GetName(), pod.GetNamespace())
+	podName := fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 
 	// Get the list of annotations currently on the pod
 	currentAnnotations := pod.GetAnnotations()
@@ -164,7 +164,7 @@ func (pa *PodAnnotator) createNewAnnotations(pod *v1.Pod, podAnnotations *bdanno
 }
 
 func (pa *PodAnnotator) addPodLabels(pod *v1.Pod, podAnnotations *bdannotations.BlackDuckPodAnnotation, images []perceptorapi.ScannedImage) bool {
-	podName := fmt.Sprintf("%s/%s", pod.GetName(), pod.GetNamespace())
+	podName := fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 
 	// Get the list of labels currently on the pod
 	currentLabels := pod.GetLabels()
