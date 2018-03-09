@@ -23,8 +23,11 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"os"
 
 	"github.com/blackducksoftware/perceivers/pod/cmd/app"
+	"github.com/prometheus/client_golang/prometheus"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -51,7 +54,19 @@ func main() {
 		panic(fmt.Errorf("failed to create pod-perceiver: %v", err))
 	}
 
+	go setUpPrometheus(config.Port)
+
 	// Run the perceiver
 	stopCh := make(chan struct{})
 	perceiver.Run(stopCh)
+}
+
+func setUpPrometheus(port int) {
+	log.Info("setting up prometheus on port %d", port)
+	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
+	prometheus.Unregister(prometheus.NewGoCollector())
+	http.Handle("/metrics", prometheus.Handler())
+
+	addr := fmt.Sprintf(":%d", port)
+	http.ListenAndServe(addr, nil)
 }
