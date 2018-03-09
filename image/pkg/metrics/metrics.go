@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 )
 
 var httpResults *prometheus.CounterVec
@@ -36,19 +35,16 @@ var errorsCounter *prometheus.CounterVec
 // helpers
 
 func RecordError(errorStage string, errorName string) {
-	log.Infof("metrics record error %s, %s", errorStage, errorName)
 	errorsCounter.With(prometheus.Labels{"stage": errorStage, "errorName": errorName}).Inc()
 }
 
 func RecordDuration(operation string, duration time.Duration) {
-	log.Infof("record duration %s, %s", operation, duration)
 	durationsHistogram.With(prometheus.Labels{"operation": operation}).Observe(duration.Seconds())
 }
 
 // recorders
 
 func RecordHttpStats(path string, success bool) {
-	log.Infof("record http stats -- %s, %t", path, success)
 	httpResults.With(prometheus.Labels{"path": path, "result": fmt.Sprintf("%t", success)}).Inc()
 }
 
