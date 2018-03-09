@@ -69,7 +69,7 @@ func init() {
 			Subsystem: "pod_perceiver",
 			Name:      "timings",
 			Help:      "time durations of pod perceiver operations",
-			Buckets:   prometheus.ExponentialBuckets(0.25, 2, 20),
+			Buckets:   prometheus.ExponentialBuckets(0.0001, 2, 20),
 		},
 		[]string{"operation"})
 
