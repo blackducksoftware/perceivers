@@ -188,7 +188,9 @@ func (pc *PodController) processPod(key string) error {
 	}
 
 	// Get the pod
+	getPodStart := time.Now()
 	pod, err := pc.podLister.Pods(ns).Get(name)
+	metrics.RecordDuration("get pod -- pod controller", time.Now().Sub(getPodStart))
 	if err != nil {
 		metrics.RecordError("controller", "unable to get pod")
 	}

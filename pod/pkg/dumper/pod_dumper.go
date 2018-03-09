@@ -100,7 +100,9 @@ func (pd *PodDumper) getAllPodsAsPerceptorPods() ([]perceptorapi.Pod, error) {
 	perceptorPods := []perceptorapi.Pod{}
 
 	// Get all pods from kubernetes
+	getPodsStart := time.Now()
 	pods, err := pd.coreV1.Pods(v1.NamespaceAll).List(metav1.ListOptions{})
+	metrics.RecordDuration("get pods", time.Now().Sub(getPodsStart))
 	if err != nil {
 		metrics.RecordError("dumper", "unable to list pods")
 		return nil, err

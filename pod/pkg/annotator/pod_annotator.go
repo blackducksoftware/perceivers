@@ -114,7 +114,9 @@ func (pa *PodAnnotator) getScanResults() (*perceptorapi.ScanResults, error) {
 func (pa *PodAnnotator) addAnnotationsToPods(results perceptorapi.ScanResults) {
 	for _, pod := range results.Pods {
 		podName := fmt.Sprintf("%s:%s", pod.Namespace, pod.Name)
+		getPodStart := time.Now()
 		kubePod, err := pa.coreV1.Pods(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
+		metrics.RecordDuration("get pod", time.Now().Sub(getPodStart))
 		if err != nil {
 			metrics.RecordError("annotator", "unable to get pod")
 			log.Errorf("unable to get pod %s: %v", podName, err)
@@ -126,7 +128,9 @@ func (pa *PodAnnotator) addAnnotationsToPods(results perceptorapi.ScanResults) {
 		// Update the pod if any label or annotation isn't correct
 		if pa.addPodAnnotations(kubePod, podAnnotations, results.Images) ||
 			pa.addPodLabels(kubePod, podAnnotations, results.Images) {
+			updatePodStart := time.Now()
 			_, err = pa.coreV1.Pods(pod.Namespace).Update(kubePod)
+			metrics.RecordDuration("update pod", time.Now().Sub(updatePodStart))
 			if err != nil {
 				metrics.RecordError("annotator", "unable to update annotations/labels for pod")
 				log.Errorf("unable to update annotations/labels for pod %s: %v", podName, err)
@@ -141,7 +145,9 @@ func (pa *PodAnnotator) addPodAnnotations(pod *v1.Pod, podAnnotations *bdannotat
 	podName := fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 
 	// Get the list of annotations currently on the pod
+	getAnnotationsStart := time.Now()
 	currentAnnotations := pod.GetAnnotations()
+	metrics.RecordDuration("get pod annotations", time.Now().Sub(getAnnotationsStart))
 	if currentAnnotations == nil {
 		currentAnnotations = map[string]string{}
 	}
@@ -154,7 +160,9 @@ func (pa *PodAnnotator) addPodAnnotations(pod *v1.Pod, podAnnotations *bdannotat
 	if !bdannotations.MapContainsBlackDuckEntries(currentAnnotations, newAnnotations) {
 		metrics.RecordError("annotator", "annotations are missing or incorrect on pod")
 		log.Infof("annotations are missing or incorrect on pod %s.  Expected %v to contain %v", podName, currentAnnotations, newAnnotations)
+		setAnnotationsStart := time.Now()
 		pod.SetAnnotations(utils.MapMerge(currentAnnotations, newAnnotations))
+		metrics.RecordDuration("set pod annotations", time.Now().Sub(setAnnotationsStart))
 		return true
 	}
 	return false
@@ -175,7 +183,9 @@ func (pa *PodAnnotator) addPodLabels(pod *v1.Pod, podAnnotations *bdannotations.
 	podName := fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 
 	// Get the list of labels currently on the pod
+	getLabelsStart := time.Now()
 	currentLabels := pod.GetLabels()
+	metrics.RecordDuration("get pod labels", time.Now().Sub(getLabelsStart))
 	if currentLabels == nil {
 		currentLabels = map[string]string{}
 	}
@@ -188,7 +198,9 @@ func (pa *PodAnnotator) addPodLabels(pod *v1.Pod, podAnnotations *bdannotations.
 	if !bdannotations.MapContainsBlackDuckEntries(currentLabels, newLabels) {
 		metrics.RecordError("annotator", "labels are missing or incorrect on pod")
 		log.Infof("labels are missing or incorrect on pod %s.  Expected %v to contain %v", podName, currentLabels, newLabels)
+		setLabelsStart := time.Now()
 		pod.SetLabels(utils.MapMerge(currentLabels, newLabels))
+		metrics.RecordDuration("set pod labels", time.Now().Sub(setLabelsStart))
 		return true
 	}
 	return false
