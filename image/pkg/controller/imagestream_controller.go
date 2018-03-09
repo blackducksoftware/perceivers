@@ -29,6 +29,7 @@ import (
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
 	"github.com/blackducksoftware/perceivers/image/pkg/mapper"
+	"github.com/blackducksoftware/perceivers/image/pkg/metrics"
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -136,6 +137,7 @@ func (osisc *OSImageStreamController) processNextWorkItem() bool {
 
 	key, ok := keyObj.(*imageapi.ImageStream)
 	if !ok {
+		metrics.RecordError("imagestream_controller", "key wasn't an imagestream")
 		utilruntime.HandleError(fmt.Errorf("key wasn't an imagestream"))
 		return true
 	}
@@ -148,6 +150,8 @@ func (osisc *OSImageStreamController) processNextWorkItem() bool {
 		osisc.queue.Forget(key)
 		return true
 	}
+
+	metrics.RecordError("imagestream_controller", "unable to sync handler")
 
 	// there was a failure so be sure to report it.  This method allows for pluggable error handling
 	// which can be used for things like cluster-monitoring
@@ -165,16 +169,24 @@ func (osisc *OSImageStreamController) processNextWorkItem() bool {
 func (osisc *OSImageStreamController) processImageStream(obj *imageapi.ImageStream) error {
 	errList := []string{}
 	// Get an updated version of this imagestream if it exists
+	getImageStream := time.Now()
 	is, err := osisc.imageStreamLister.ImageStreams(metav1.NamespaceAll).Get(obj.GetName())
+	metrics.RecordDuration("get image stream", time.Now().Sub(getImageStream))
+	if err != nil {
+		metrics.RecordError("imagestream_controller", "unable to get updated version of image stream")
+	}
 	if errors.IsNotFound(err) {
 		// ImageStream doesn't exist (anymore), so this is a delete event
 		images, err := osisc.getImagesFromImageStream(obj)
+		metrics.RecordError("imagestream_controller", "unable to get images from image stream #1")
 		if err != nil {
 			return err
 		}
 		for _, image := range images {
 			err = communicator.SendPerceptorDeleteEvent(osisc.imageURL, image.Name)
+			metrics.RecordHttpStats(osisc.imageURL, err == nil)
 			if err != nil {
+				metrics.RecordError("imagestream_controller", "unable to send delete event")
 				errList = append(errList, err.Error())
 			}
 		}
@@ -185,11 +197,14 @@ func (osisc *OSImageStreamController) processImageStream(obj *imageapi.ImageStre
 
 	images, err := osisc.getImagesFromImageStream(is)
 	if err != nil {
+		metrics.RecordError("imagestream_controller", "unable to get images from image stream #2")
 		return err
 	}
 	for _, image := range images {
 		err = communicator.SendPerceptorAddEvent(osisc.imageURL, image)
+		metrics.RecordHttpStats(osisc.imageURL, err == nil)
 		if err != nil {
+			metrics.RecordError("imagestream_controller", "unable to send add event")
 			errList = append(errList, err.Error())
 		}
 	}
@@ -199,6 +214,7 @@ func (osisc *OSImageStreamController) processImageStream(obj *imageapi.ImageStre
 func (osisc *OSImageStreamController) getImagesFromImageStream(stream *imageapi.ImageStream) ([]*perceptorapi.Image, error) {
 	tags := stream.Status.Tags
 	if tags == nil {
+		metrics.RecordError("imagestream_controller", "image stream has no tags")
 		return nil, fmt.Errorf("image stream %s has no tags", stream.GetName())
 	}
 
@@ -206,8 +222,11 @@ func (osisc *OSImageStreamController) getImagesFromImageStream(stream *imageapi.
 	images := []*perceptorapi.Image{}
 	for _, events := range tags {
 		ref := events.Items[0].Image
+		getImagesStart := time.Now()
 		image, err := osisc.client.Images().Get(ref, metav1.GetOptions{})
+		metrics.RecordDuration("get images from image stream", time.Now().Sub(getImagesStart))
 		if err != nil {
+			metrics.RecordError("imagestream_controller", "error getting image")
 			return nil, fmt.Errorf("error getting image %s@%s: %v", digest, ref, err)
 		}
 

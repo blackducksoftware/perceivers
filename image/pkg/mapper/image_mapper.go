@@ -29,6 +29,8 @@ import (
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
 	imageapi "github.com/openshift/api/image/v1"
+
+	metrics "github.com/blackducksoftware/perceivers/image/pkg/metrics"
 )
 
 // NewPerceptorImageFromOSImage will convert an openshift image object to a
@@ -37,6 +39,7 @@ func NewPerceptorImageFromOSImage(image *imageapi.Image) (*perceptorapi.Image, e
 	dockerRef := image.DockerImageReference
 	name, sha, err := docker.ParseImageIDString(dockerRef)
 	if err != nil {
+		metrics.RecordError("mapper", "unable to parse openshift imageID")
 		return nil, fmt.Errorf("unable to parse openshift imageID %s: %v", dockerRef, err)
 	}
 
