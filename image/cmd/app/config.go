@@ -55,6 +55,7 @@ type ImagePerceiverConfig struct {
 	PerceptorPort             int
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
+	Port                      int
 }
 
 // GetImagePerceiverConfig returns a configuration object to configure a ImagePerceiver

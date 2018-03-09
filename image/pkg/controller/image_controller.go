@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/perceivers/image/pkg/mapper"
+	"github.com/blackducksoftware/perceivers/image/pkg/metrics"
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 
@@ -120,6 +121,8 @@ func (ic *ImageController) enqueueJob(obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err == nil {
 		ic.queue.Add(key)
+	} else {
+		metrics.RecordError("image_controller", "unable to retrieve key from cache")
 	}
 }
 
@@ -155,6 +158,8 @@ func (ic *ImageController) processNextWorkItem() bool {
 		return true
 	}
 
+	metrics.RecordError("image_controller", "unable to sync handler")
+
 	// There was a failure so be sure to report it.  This method allows for pluggable error handling
 	// which can be used for things like cluster-monitoring
 	utilruntime.HandleError(fmt.Errorf("%v failed with : %v", key, err))
@@ -173,11 +178,15 @@ func (ic *ImageController) processImage(key string) error {
 
 	_, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
+		metrics.RecordError("image_controller", "error getting name of image")
 		return fmt.Errorf("error getting name of image %q to get image from informer: %v", key, err)
 	}
 
 	// Get the image
 	image, err := ic.imageLister.Get(name)
+	if err != nil {
+		metrics.RecordError("image_controller", "error getting image lister")
+	}
 	if errors.IsNotFound(err) {
 		// Image doesn't exist (anymore), so this is a delete event
 		return communicator.SendPerceptorDeleteEvent(ic.imageURL, name)
@@ -189,6 +198,7 @@ func (ic *ImageController) processImage(key string) error {
 	// to the perceptor
 	imageInfo, err := mapper.NewPerceptorImageFromOSImage(image)
 	if err != nil {
+		metrics.RecordError("image_controller", "error instantiating perceptor image")
 		return fmt.Errorf("error converting image to perceptor image: %v", err)
 	}
 	return communicator.SendPerceptorAddEvent(ic.imageURL, imageInfo)

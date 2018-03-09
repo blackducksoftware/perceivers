@@ -29,6 +29,8 @@ import (
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
 	"k8s.io/api/core/v1"
+
+	metrics "github.com/blackducksoftware/perceivers/pod/pkg/metrics"
 )
 
 // NewPerceptorPodFromKubePod will convert a kubernetes pod object to a
@@ -39,6 +41,7 @@ func NewPerceptorPodFromKubePod(kubePod *v1.Pod) (*perceptorapi.Pod, error) {
 		if len(newCont.ImageID) > 0 {
 			name, sha, err := docker.ParseImageIDString(newCont.ImageID)
 			if err != nil {
+				metrics.RecordError("mapper", "unable to parse kubernetes imageID")
 				return nil, fmt.Errorf("unable to parse kubernetes imageID string %s from pod %s/%s: %v", newCont.ImageID, kubePod.Namespace, kubePod.Name, err)
 			}
 			addedCont := perceptorapi.NewContainer(*perceptorapi.NewImage(name, sha, newCont.Image), newCont.Name)

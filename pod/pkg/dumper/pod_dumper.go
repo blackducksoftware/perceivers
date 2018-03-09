@@ -28,6 +28,7 @@ import (
 
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	"github.com/blackducksoftware/perceivers/pod/pkg/mapper"
+	"github.com/blackducksoftware/perceivers/pod/pkg/metrics"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
@@ -70,6 +71,7 @@ func (pd *PodDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
 		// Get all the pods in the format perceptor uses
 		pods, err := pd.getAllPodsAsPerceptorPods()
 		if err != nil {
+			metrics.RecordError("dumper", "unable to get all pods")
 			log.Errorf("unable to get all pods: %v", err)
 			continue
 		}
@@ -77,13 +79,16 @@ func (pd *PodDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
 
 		jsonBytes, err := json.Marshal(perceptorapi.NewAllPods(pods))
 		if err != nil {
+			metrics.RecordError("dumper", "unable to serialize all pods")
 			log.Errorf("unable to serialize all pods: %v", err)
 			continue
 		}
 
 		// Send all the pod information to the perceptor
 		err = communicator.SendPerceptorData(pd.allPodsURL, jsonBytes)
+		metrics.RecordHttpStats(pd.allPodsURL, err == nil)
 		if err != nil {
+			metrics.RecordError("dumper", "unable to send pods")
 			log.Errorf("failed to send pods: %v", err)
 		} else {
 			log.Infof("http POST request to %s succeeded", pd.allPodsURL)
@@ -95,8 +100,11 @@ func (pd *PodDumper) getAllPodsAsPerceptorPods() ([]perceptorapi.Pod, error) {
 	perceptorPods := []perceptorapi.Pod{}
 
 	// Get all pods from kubernetes
+	getPodsStart := time.Now()
 	pods, err := pd.coreV1.Pods(v1.NamespaceAll).List(metav1.ListOptions{})
+	metrics.RecordDuration("get pods", time.Now().Sub(getPodsStart))
 	if err != nil {
+		metrics.RecordError("dumper", "unable to list pods")
 		return nil, err
 	}
 
@@ -104,6 +112,7 @@ func (pd *PodDumper) getAllPodsAsPerceptorPods() ([]perceptorapi.Pod, error) {
 	for _, pod := range pods.Items {
 		perceptorPod, err := mapper.NewPerceptorPodFromKubePod(&pod)
 		if err != nil {
+			metrics.RecordError("dumper", "unable to convert kube pod to perceptor pod")
 			return nil, err
 		}
 		perceptorPods = append(perceptorPods, *perceptorPod)

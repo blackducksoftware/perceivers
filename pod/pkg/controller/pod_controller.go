@@ -28,6 +28,7 @@ import (
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	"github.com/blackducksoftware/perceivers/pod/pkg/mapper"
+	"github.com/blackducksoftware/perceivers/pod/pkg/metrics"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
@@ -124,6 +125,8 @@ func (pc *PodController) enqueueJob(obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err == nil {
 		pc.queue.Add(key)
+	} else {
+		metrics.RecordError("controller", "unable to get key")
 	}
 }
 
@@ -160,6 +163,8 @@ func (pc *PodController) processNextWorkItem() bool {
 		return true
 	}
 
+	metrics.RecordError("controller", "unable to sync handler")
+
 	// There was a failure so be sure to report it.  This method allows for pluggable error handling
 	// which can be used for things like cluster-monitoring
 	utilruntime.HandleError(fmt.Errorf("%v failed with : %v", key, err))
@@ -178,11 +183,17 @@ func (pc *PodController) processPod(key string) error {
 
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
+		metrics.RecordError("controller", "error getting name of pod")
 		return fmt.Errorf("error getting name of pod %q to get pod from informer: %v", key, err)
 	}
 
 	// Get the pod
+	getPodStart := time.Now()
 	pod, err := pc.podLister.Pods(ns).Get(name)
+	metrics.RecordDuration("get pod -- pod controller", time.Now().Sub(getPodStart))
+	if err != nil {
+		metrics.RecordError("controller", "unable to get pod")
+	}
 	if errors.IsNotFound(err) {
 		// Pod doesn't exist (anymore), so this is a delete event
 		return communicator.SendPerceptorDeleteEvent(pc.podURL, name)
@@ -194,6 +205,7 @@ func (pc *PodController) processPod(key string) error {
 	// the perceptor
 	podInfo, err := mapper.NewPerceptorPodFromKubePod(pod)
 	if err != nil {
+		metrics.RecordError("controller", "unable to convert kube pod to perceptor pod")
 		return fmt.Errorf("error converting pod to perceptor pod: %v", err)
 	}
 	return communicator.SendPerceptorAddEvent(pc.podURL, podInfo)
