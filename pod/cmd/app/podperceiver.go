@@ -23,6 +23,8 @@ package app
 
 import (
 	"fmt"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/blackducksoftware/perceivers/pod/pkg/annotator"
@@ -33,6 +35,8 @@ import (
 	"k8s.io/client-go/rest"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // PodPerceiver handles watching and annotating pods
@@ -44,6 +48,8 @@ type PodPerceiver struct {
 
 	podDumper    *dumper.PodDumper
 	dumpInterval time.Duration
+
+	metricsURL string
 }
 
 // NewPodPerceiver creates a new PodPerceiver object
@@ -58,6 +64,11 @@ func NewPodPerceiver(config *PodPerceiverConfig) (*PodPerceiver, error) {
 		return nil, fmt.Errorf("unable to create kubernetes client: %v", err)
 	}
 
+	// Configure prometheus for metrics
+	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
+	prometheus.Unregister(prometheus.NewGoCollector())
+	http.Handle("/metrics", prometheus.Handler())
+
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.PerceptorHost, config.PerceptorPort)
 	p := PodPerceiver{
 		podController:      controller.NewPodController(clientset, perceptorURL),
@@ -65,17 +76,21 @@ func NewPodPerceiver(config *PodPerceiverConfig) (*PodPerceiver, error) {
 		annotationInterval: time.Second * time.Duration(config.AnnotationIntervalSeconds),
 		podDumper:          dumper.NewPodDumper(clientset.CoreV1(), perceptorURL),
 		dumpInterval:       time.Minute * time.Duration(config.DumpIntervalMinutes),
+		metricsURL:         fmt.Sprintf(":%d", config.Port),
 	}
 
 	return &p, nil
 }
 
 // Run starts the PodPerceiver watching and annotating pods
-func (kp *PodPerceiver) Run(stopCh <-chan struct{}) {
+func (pp *PodPerceiver) Run(stopCh <-chan struct{}) {
 	log.Infof("starting pod controllers")
-	go kp.podController.Run(5, stopCh)
-	go kp.podAnnotator.Run(kp.annotationInterval, stopCh)
-	go kp.podDumper.Run(kp.dumpInterval, stopCh)
+	go pp.podController.Run(5, stopCh)
+	go pp.podAnnotator.Run(pp.annotationInterval, stopCh)
+	go pp.podDumper.Run(pp.dumpInterval, stopCh)
+
+	log.Infof("starting prometheus on %d", pp.metricsURL)
+	http.ListenAndServe(pp.metricsURL, nil)
 
 	<-stopCh
 }

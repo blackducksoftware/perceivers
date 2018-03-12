@@ -23,6 +23,8 @@ package app
 
 import (
 	"fmt"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/blackducksoftware/perceivers/image/pkg/annotator"
@@ -34,6 +36,8 @@ import (
 	imagev1 "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // ImagePerceiver handles watching and annotating Images
@@ -47,6 +51,8 @@ type ImagePerceiver struct {
 
 	ImageDumper  *dumper.ImageDumper
 	dumpInterval time.Duration
+
+	metricsURL string
 }
 
 // NewImagePerceiver creates a new ImagePerceiver object
@@ -61,6 +67,11 @@ func NewImagePerceiver(config *ImagePerceiverConfig) (*ImagePerceiver, error) {
 		return nil, fmt.Errorf("unable to create image client: %v", err)
 	}
 
+	// Configure prometheus for metrics
+	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
+	prometheus.Unregister(prometheus.NewGoCollector())
+	http.Handle("/metrics", prometheus.Handler())
+
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.PerceptorHost, config.PerceptorPort)
 	p := ImagePerceiver{
 		ImageController:    controller.NewImageController(imageClient, perceptorURL),
@@ -68,17 +79,21 @@ func NewImagePerceiver(config *ImagePerceiverConfig) (*ImagePerceiver, error) {
 		annotationInterval: time.Second * time.Duration(config.AnnotationIntervalSeconds),
 		ImageDumper:        dumper.NewImageDumper(imageClient, perceptorURL),
 		dumpInterval:       time.Minute * time.Duration(config.DumpIntervalMinutes),
+		metricsURL:         fmt.Sprintf(":%d", config.Port),
 	}
 
 	return &p, nil
 }
 
 // Run starts the ImagePerceiver watching and annotating Images
-func (kp *ImagePerceiver) Run(stopCh <-chan struct{}) {
+func (ip *ImagePerceiver) Run(stopCh <-chan struct{}) {
 	log.Infof("starting image controllers")
-	go kp.ImageController.Run(5, stopCh)
-	go kp.ImageAnnotator.Run(kp.annotationInterval, stopCh)
-	go kp.ImageDumper.Run(kp.dumpInterval, stopCh)
+	go ip.ImageController.Run(5, stopCh)
+	go ip.ImageAnnotator.Run(ip.annotationInterval, stopCh)
+	go ip.ImageDumper.Run(ip.dumpInterval, stopCh)
+
+	log.Infof("starting prometheus on %d", ip.metricsURL)
+	http.ListenAndServe(ip.metricsURL, nil)
 
 	<-stopCh
 }
