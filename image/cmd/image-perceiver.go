@@ -54,7 +54,7 @@ func main() {
 }
 
 func setUpPrometheus(port int) {
-	log.Info("setting up prometheus on port %d", port)
+	log.Infof("setting up prometheus on port %d", port)
 	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
 	prometheus.Unregister(prometheus.NewGoCollector())
 	http.Handle("/metrics", prometheus.Handler())
