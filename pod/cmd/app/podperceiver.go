@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -27,6 +27,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/blackducksoftware/perceivers/pkg/annotations"
 	"github.com/blackducksoftware/perceivers/pod/pkg/annotator"
 	"github.com/blackducksoftware/perceivers/pod/pkg/controller"
 	"github.com/blackducksoftware/perceivers/pod/pkg/dumper"
@@ -53,7 +54,12 @@ type PodPerceiver struct {
 }
 
 // NewPodPerceiver creates a new PodPerceiver object
-func NewPodPerceiver(config *PodPerceiverConfig) (*PodPerceiver, error) {
+func NewPodPerceiver(handler annotations.PodAnnotatorHandler) (*PodPerceiver, error) {
+	config, err := GetPodPerceiverConfig()
+	if err != nil {
+		panic(fmt.Errorf("failed to read config: %v", err))
+	}
+
 	// Create a kube client from in cluster configuration
 	clusterConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -71,8 +77,8 @@ func NewPodPerceiver(config *PodPerceiverConfig) (*PodPerceiver, error) {
 
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.PerceptorHost, config.PerceptorPort)
 	p := PodPerceiver{
-		podController:      controller.NewPodController(clientset, perceptorURL),
-		podAnnotator:       annotator.NewPodAnnotator(clientset.CoreV1(), perceptorURL),
+		podController:      controller.NewPodController(clientset, perceptorURL, handler),
+		podAnnotator:       annotator.NewPodAnnotator(clientset.CoreV1(), perceptorURL, handler),
 		annotationInterval: time.Second * time.Duration(config.AnnotationIntervalSeconds),
 		podDumper:          dumper.NewPodDumper(clientset.CoreV1(), perceptorURL),
 		dumpInterval:       time.Minute * time.Duration(config.DumpIntervalMinutes),

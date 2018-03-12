@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -59,14 +59,17 @@ type PodController struct {
 
 	syncHandler func(string) error
 	queue       workqueue.RateLimitingInterface
+
+	h annotations.ImageAnnotatorHandler
 }
 
 // NewPodController creates a new PodController object
-func NewPodController(kubeClient kubernetes.Interface, perceptorURL string) *PodController {
+func NewPodController(kubeClient kubernetes.Interface, perceptorURL string, handler annotations.ImageAnnotatorHandler) *PodController {
 	pc := PodController{
 		client: kubeClient,
 		queue:  workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Pods"),
 		podURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.PodPath),
+		h:      handler,
 	}
 	pc.podIndexer, pc.podController = cache.NewIndexerInformer(
 		&cache.ListWatch{
@@ -131,8 +134,8 @@ func (pc *PodController) enqueueJob(obj interface{}) {
 }
 
 func (pc *PodController) needsUpdate(oldObj *v1.Pod, newObj *v1.Pod) bool {
-	return !annotations.MapContainsBlackDuckEntries(oldObj.GetLabels(), newObj.GetLabels()) ||
-		!annotations.MapContainsBlackDuckEntries(oldObj.GetAnnotations(), newObj.GetAnnotations())
+	return !pc.h.CompareMaps(oldObj.GetLabels(), newObj.GetLabels()) ||
+		!pc.h.CompareMaps(oldObj.GetAnnotations(), newObj.GetAnnotations())
 }
 
 func (pc *PodController) runWorker() {

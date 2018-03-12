@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -59,14 +59,17 @@ type ImageController struct {
 
 	syncHandler func(key string) error
 	queue       workqueue.RateLimitingInterface
+
+	h annotations.ImageAnnotatorHandler
 }
 
 // NewImageController creates a new ImageController object
-func NewImageController(oic *imageclient.ImageV1Client, perceptorURL string) *ImageController {
+func NewImageController(oic *imageclient.ImageV1Client, perceptorURL string, handler annotations.ImageAnnotatorHandler) *ImageController {
 	ic := ImageController{
 		client:   oic,
 		queue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Images"),
 		imageURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ImagePath),
+		h:        handler,
 	}
 	ic.indexer, ic.imageController = cache.NewIndexerInformer(
 		&cache.ListWatch{
@@ -127,8 +130,8 @@ func (ic *ImageController) enqueueJob(obj interface{}) {
 }
 
 func (ic *ImageController) needsUpdate(oldObj *imageapi.Image, newObj *imageapi.Image) bool {
-	return !annotations.MapContainsBlackDuckEntries(oldObj.GetLabels(), newObj.GetLabels()) ||
-		!annotations.MapContainsBlackDuckEntries(oldObj.GetAnnotations(), newObj.GetAnnotations())
+	return !ic.h.CompareMaps(oldObj.GetLabels(), newObj.GetLabels()) ||
+		!ic.h.CompareMaps(oldObj.GetAnnotations(), newObj.GetAnnotations())
 }
 
 func (ic *ImageController) runWorker() {

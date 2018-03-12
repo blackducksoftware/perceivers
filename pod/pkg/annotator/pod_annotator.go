@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"time"
 
-	bdannotations "github.com/blackducksoftware/perceivers/pkg/annotations"
+	"github.com/blackducksoftware/perceivers/pkg/annotations"
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	"github.com/blackducksoftware/perceivers/pkg/docker"
 	"github.com/blackducksoftware/perceivers/pkg/utils"
@@ -47,13 +47,15 @@ import (
 type PodAnnotator struct {
 	coreV1         corev1.CoreV1Interface
 	scanResultsURL string
+	h              annotations.PodAnnotatorHandler
 }
 
 // NewPodAnnotator creates a new PodAnnotator object
-func NewPodAnnotator(pl corev1.CoreV1Interface, perceptorURL string) *PodAnnotator {
+func NewPodAnnotator(pl corev1.CoreV1Interface, perceptorURL string, handler annotations.PodAnnotatorHandler) *PodAnnotator {
 	return &PodAnnotator{
 		coreV1:         pl,
 		scanResultsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ScanResultsPath),
+		h:              handler,
 	}
 }
 
@@ -123,7 +125,7 @@ func (pa *PodAnnotator) addAnnotationsToPods(results perceptorapi.ScanResults) {
 			continue
 		}
 
-		podAnnotations := bdannotations.NewBlackDuckPodAnnotation(pod.PolicyViolations, pod.Vulnerabilities, pod.OverallStatus, results.HubVersion, results.HubScanClientVersion)
+		podAnnotations := annotations.NewPodAnnotationData(pod.PolicyViolations, pod.Vulnerabilities, pod.OverallStatus, results.HubVersion, results.HubScanClientVersion)
 
 		// Update the pod if any label or annotation isn't correct
 		if pa.addPodAnnotations(kubePod, podAnnotations, results.Images) ||
@@ -141,7 +143,7 @@ func (pa *PodAnnotator) addAnnotationsToPods(results perceptorapi.ScanResults) {
 	}
 }
 
-func (pa *PodAnnotator) addPodAnnotations(pod *v1.Pod, podAnnotations *bdannotations.BlackDuckPodAnnotation, images []perceptorapi.ScannedImage) bool {
+func (pa *PodAnnotator) addPodAnnotations(pod *v1.Pod, podAnnotations *annotations.PodAnnotationData, images []perceptorapi.ScannedImage) bool {
 	podName := fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 
 	// Get the list of annotations currently on the pod
@@ -157,7 +159,7 @@ func (pa *PodAnnotator) addPodAnnotations(pod *v1.Pod, podAnnotations *bdannotat
 
 	// Apply updated annotations to the pod if the existing annotations don't
 	// contain the expected entries
-	if !bdannotations.MapContainsBlackDuckEntries(currentAnnotations, newAnnotations) {
+	if !pa.h.CompareMaps(currentAnnotations, newAnnotations) {
 		metrics.RecordError("annotator", "annotations are missing or incorrect on pod")
 		log.Infof("annotations are missing or incorrect on pod %s.  Expected %v to contain %v", podName, currentAnnotations, newAnnotations)
 		setAnnotationsStart := time.Now()
@@ -168,18 +170,18 @@ func (pa *PodAnnotator) addPodAnnotations(pod *v1.Pod, podAnnotations *bdannotat
 	return false
 }
 
-func (pa *PodAnnotator) createNewAnnotations(pod *v1.Pod, podAnnotations *bdannotations.BlackDuckPodAnnotation, images []perceptorapi.ScannedImage) map[string]string {
+func (pa *PodAnnotator) createNewAnnotations(pod *v1.Pod, podData *annotations.PodAnnotationData, images []perceptorapi.ScannedImage) map[string]string {
 	// Generate the pod level annotations that should be on the pod
-	annotations := bdannotations.CreatePodAnnotations(podAnnotations)
+	podAnnotations := pa.h.CreatePodAnnotations(podData)
 
 	// Generate the image level annotations that should be on the pod
-	imageAnnotations := pa.getPodContainerMap(pod, images, podAnnotations.GetHubVersion(), podAnnotations.GetScanClientVersion(), bdannotations.CreateImageAnnotations)
+	imageAnnotations := pa.getPodContainerMap(pod, images, podData.GetHubVersion(), podData.GetScanClientVersion(), pa.h.CreateImageAnnotations)
 
 	// Merge the pod and image level annotations
-	return utils.MapMerge(annotations, imageAnnotations)
+	return utils.MapMerge(podAnnotations, imageAnnotations)
 }
 
-func (pa *PodAnnotator) addPodLabels(pod *v1.Pod, podAnnotations *bdannotations.BlackDuckPodAnnotation, images []perceptorapi.ScannedImage) bool {
+func (pa *PodAnnotator) addPodLabels(pod *v1.Pod, podAnnotations *annotations.PodAnnotationData, images []perceptorapi.ScannedImage) bool {
 	podName := fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 
 	// Get the list of labels currently on the pod
@@ -195,7 +197,7 @@ func (pa *PodAnnotator) addPodLabels(pod *v1.Pod, podAnnotations *bdannotations.
 
 	// Apply updated labels to the pod if the existing labels don't
 	// contain the expected entries
-	if !bdannotations.MapContainsBlackDuckEntries(currentLabels, newLabels) {
+	if !pa.h.CompareMaps(currentLabels, newLabels) {
 		metrics.RecordError("annotator", "labels are missing or incorrect on pod")
 		log.Infof("labels are missing or incorrect on pod %s.  Expected %v to contain %v", podName, currentLabels, newLabels)
 		setLabelsStart := time.Now()
@@ -206,18 +208,18 @@ func (pa *PodAnnotator) addPodLabels(pod *v1.Pod, podAnnotations *bdannotations.
 	return false
 }
 
-func (pa *PodAnnotator) createNewLabels(pod *v1.Pod, podAnnotations *bdannotations.BlackDuckPodAnnotation, images []perceptorapi.ScannedImage) map[string]string {
+func (pa *PodAnnotator) createNewLabels(pod *v1.Pod, podAnnotations *annotations.PodAnnotationData, images []perceptorapi.ScannedImage) map[string]string {
 	// Generate the pod level labels that should be on the pod
-	labels := bdannotations.CreatePodLabels(podAnnotations)
+	labels := pa.h.CreatePodLabels(podAnnotations)
 
 	// Generate the image level labels that should be on the pod
-	imageLabels := pa.getPodContainerMap(pod, images, podAnnotations.GetHubVersion(), podAnnotations.GetScanClientVersion(), bdannotations.CreateImageLabels)
+	imageLabels := pa.getPodContainerMap(pod, images, podAnnotations.GetHubVersion(), podAnnotations.GetScanClientVersion(), pa.h.CreateImageLabels)
 
 	// Merge the pod and image level annotations
 	return utils.MapMerge(labels, imageLabels)
 }
 
-func (pa *PodAnnotator) getPodContainerMap(pod *v1.Pod, scannedImages []perceptorapi.ScannedImage, hubVersion string, scVersion string, mapGenerator func(*bdannotations.BlackDuckImageAnnotation, string, int) map[string]string) map[string]string {
+func (pa *PodAnnotator) getPodContainerMap(pod *v1.Pod, scannedImages []perceptorapi.ScannedImage, hubVersion string, scVersion string, mapGenerator func(interface{}, string, int) map[string]string) map[string]string {
 	containerMap := make(map[string]string)
 
 	for cnt, container := range pod.Status.ContainerStatuses {
@@ -246,7 +248,7 @@ func (pa *PodAnnotator) findImageAnnotations(imageName string, imageSha string, 
 	return nil
 }
 
-func (pa *PodAnnotator) createImageAnnotationsFromImageScanResults(scannedImage *perceptorapi.ScannedImage, hv string, scv string) *bdannotations.BlackDuckImageAnnotation {
-	return bdannotations.NewBlackDuckImageAnnotation(scannedImage.PolicyViolations,
+func (pa *PodAnnotator) createImageAnnotationsFromImageScanResults(scannedImage *perceptorapi.ScannedImage, hv string, scv string) *annotations.ImageAnnotationData {
+	return annotations.NewImageAnnotationData(scannedImage.PolicyViolations,
 		scannedImage.Vulnerabilities, scannedImage.OverallStatus, scannedImage.ComponentsURL, hv, scv)
 }
