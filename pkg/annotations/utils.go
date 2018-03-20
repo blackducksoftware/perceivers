@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -21,35 +21,12 @@ under the License.
 
 package annotations
 
-import (
-	"strings"
-)
-
-// MapContainsBlackDuckEntries returns true if the origMap contains all the important
-// blackduck entries from the newMap
-func MapContainsBlackDuckEntries(origMap map[string]string, newMap map[string]string) bool {
-	important := make(map[string]string)
-
-	for k, v := range newMap {
-		if strings.Contains(k, "blackduck") || strings.Contains(k, BDImageAnnotationPrefix) {
-			important[k] = v
-		}
-	}
-
-	return StringMapContains(origMap, important)
-}
-
 // StringMapContains will return true all the key/value pairs in subset
 // exist and are the same in bigMap
 func StringMapContains(bigMap map[string]string, subset map[string]string) bool {
 	for k, v := range subset {
 		if val, ok := bigMap[k]; !ok {
 			return false
-		} else if strings.Contains(k, BDImageAnnotationPrefix) || strings.Contains(k, BDPodAnnotationPrefix) {
-			// These keys can be either a BlackDuckAnnotation or just a string
-			if !CompareBlackDuckAnnotationJSON(bigMap[k], v) && val != v {
-				return false
-			}
 		} else if val != v {
 			return false
 		}

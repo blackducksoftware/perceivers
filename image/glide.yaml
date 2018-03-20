@@ -1,5 +1,4 @@
 package: github.com/blackducksoftware/perceivers/image
-flatten: true
 import:
 - package: github.com/blackducksoftware/perceptor
   repo: git@github.com:blackducksoftware/perceptor

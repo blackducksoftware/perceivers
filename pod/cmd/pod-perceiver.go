@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -24,6 +24,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/blackducksoftware/perceivers/pkg/annotations"
 	"github.com/blackducksoftware/perceivers/pod/cmd/app"
 
 	log "github.com/sirupsen/logrus"
@@ -40,13 +41,20 @@ import (
 func main() {
 	log.Info("starting pod-perceiver")
 
-	config, err := app.GetPodPerceiverConfig()
-	if err != nil {
-		panic(fmt.Errorf("failed to read config: %v", err))
+	handler := annotations.PodAnnotatorHandlerFuncs{
+		PodLabelCreationFunc:      annotations.CreatePodLabels,
+		PodAnnotationCreationFunc: annotations.CreatePodAnnotations,
+		ImageAnnotatorHandlerFuncs: annotations.ImageAnnotatorHandlerFuncs{
+			ImageLabelCreationFunc:      annotations.CreateImageLabels,
+			ImageAnnotationCreationFunc: annotations.CreateImageAnnotations,
+			MapCompareHandlerFuncs: annotations.MapCompareHandlerFuncs{
+				MapCompareFunc: annotations.StringMapContains,
+			},
+		},
 	}
 
 	// Create the Pod Perceiver
-	perceiver, err := app.NewPodPerceiver(config)
+	perceiver, err := app.NewPodPerceiver(handler)
 	if err != nil {
 		panic(fmt.Errorf("failed to create pod-perceiver: %v", err))
 	}

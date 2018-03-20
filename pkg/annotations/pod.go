@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -25,11 +25,8 @@ import (
 	"fmt"
 )
 
-// BDPodAnnotationPrefix is the prefix used for BlackDuckAnnotations in pod annotations
-var BDPodAnnotationPrefix = "quality.pod.openshift.io"
-
-// BlackDuckPodAnnotation describes the data model for pod annotation
-type BlackDuckPodAnnotation struct {
+// PodAnnotationData describes the data model for pod annotation
+type PodAnnotationData struct {
 	policyViolationCount int
 	vulnerabilityCount   int
 	overallStatus        string
@@ -37,9 +34,9 @@ type BlackDuckPodAnnotation struct {
 	scanClientVersion    string
 }
 
-// NewBlackDuckPodAnnotation creates a new BlackDuckPodAnnotation object
-func NewBlackDuckPodAnnotation(policyViolationCount int, vulnerabilityCount int, overallStatus string, hubVersion string, scVersion string) *BlackDuckPodAnnotation {
-	return &BlackDuckPodAnnotation{
+// NewPodAnnotationData creates a new PodAnnotationData object
+func NewPodAnnotationData(policyViolationCount int, vulnerabilityCount int, overallStatus string, hubVersion string, scVersion string) *PodAnnotationData {
+	return &PodAnnotationData{
 		policyViolationCount: policyViolationCount,
 		vulnerabilityCount:   vulnerabilityCount,
 		overallStatus:        overallStatus,
@@ -49,60 +46,58 @@ func NewBlackDuckPodAnnotation(policyViolationCount int, vulnerabilityCount int,
 }
 
 // HasPolicyViolations returns true if the pod has any policy violations
-func (bdpa *BlackDuckPodAnnotation) HasPolicyViolations() bool {
-	return bdpa.policyViolationCount > 0
+func (pad *PodAnnotationData) HasPolicyViolations() bool {
+	return pad.policyViolationCount > 0
 }
 
 // HasVulnerabilities returns true if the pod has any vulnerabilities
-func (bdpa *BlackDuckPodAnnotation) HasVulnerabilities() bool {
-	return bdpa.vulnerabilityCount > 0
+func (pad *PodAnnotationData) HasVulnerabilities() bool {
+	return pad.vulnerabilityCount > 0
 }
 
 // GetVulnerabilityCount returns the number of pod vulnerabilities
-func (bdpa *BlackDuckPodAnnotation) GetVulnerabilityCount() int {
-	return bdpa.vulnerabilityCount
+func (pad *PodAnnotationData) GetVulnerabilityCount() int {
+	return pad.vulnerabilityCount
 }
 
 // GetPolicyViolationCount returns the number of pod policy violations
-func (bdpa *BlackDuckPodAnnotation) GetPolicyViolationCount() int {
-	return bdpa.policyViolationCount
+func (pad *PodAnnotationData) GetPolicyViolationCount() int {
+	return pad.policyViolationCount
 }
 
 // GetOverallStatus returns the pod overall status
-func (bdpa *BlackDuckPodAnnotation) GetOverallStatus() string {
-	return bdpa.overallStatus
+func (pad *PodAnnotationData) GetOverallStatus() string {
+	return pad.overallStatus
 }
 
 // GetHubVersion returns the version of the hub that provided the information
-func (bdpa *BlackDuckPodAnnotation) GetHubVersion() string {
-	return bdpa.hubVersion
+func (pad *PodAnnotationData) GetHubVersion() string {
+	return pad.hubVersion
 }
 
 // GetScanClientVersion returns the version of the scan client used to scan the images
-func (bdpa *BlackDuckPodAnnotation) GetScanClientVersion() string {
-	return bdpa.scanClientVersion
+func (pad *PodAnnotationData) GetScanClientVersion() string {
+	return pad.scanClientVersion
 }
 
-// CreatePodLabels returns a map of labels from a BlackDuckPodAnnotation object
-func CreatePodLabels(podAnnotations *BlackDuckPodAnnotation) map[string]string {
+// CreatePodLabels returns a map of labels from a PodAnnotationData object
+func CreatePodLabels(obj interface{}) map[string]string {
+	podData := obj.(*PodAnnotationData)
 	labels := make(map[string]string)
-	labels["com.blackducksoftware.pod.policy-violations"] = fmt.Sprintf("%d", podAnnotations.GetPolicyViolationCount())
-	labels["com.blackducksoftware.pod.has-policy-violations"] = fmt.Sprintf("%t", podAnnotations.HasPolicyViolations())
-	labels["com.blackducksoftware.pod.vulnerabilities"] = fmt.Sprintf("%d", podAnnotations.GetVulnerabilityCount())
-	labels["com.blackducksoftware.pod.has-vulnerabilities"] = fmt.Sprintf("%t", podAnnotations.HasVulnerabilities())
-	labels["com.blackducksoftware.pod.overall-status"] = podAnnotations.GetOverallStatus()
+	labels["pod.policy-violations"] = fmt.Sprintf("%d", podData.GetPolicyViolationCount())
+	labels["pod.vulnerabilities"] = fmt.Sprintf("%d", podData.GetVulnerabilityCount())
+	labels["pod.overall-status"] = podData.GetOverallStatus()
 
 	return labels
 }
 
-// CreatePodAnnotations returns a map of annotations from a BlackDuckPodAnnotation object
-func CreatePodAnnotations(podAnnotations *BlackDuckPodAnnotation) map[string]string {
+// CreatePodAnnotations returns a map of annotations from a PodAnnotationData object
+func CreatePodAnnotations(obj interface{}) map[string]string {
+	podData := obj.(*PodAnnotationData)
 	newAnnotations := make(map[string]string)
-	vulnAnnotations := CreateBlackDuckVulnerabilityAnnotation(podAnnotations.HasVulnerabilities() == true, "", podAnnotations.GetVulnerabilityCount())
-	policyAnnotations := CreateBlackDuckPolicyAnnotation(podAnnotations.HasPolicyViolations() == true, "", podAnnotations.GetPolicyViolationCount())
 
-	newAnnotations[fmt.Sprintf("%s/vulnerability.blackduck", BDPodAnnotationPrefix)] = vulnAnnotations.AsString()
-	newAnnotations[fmt.Sprintf("%s/policy.blackduck", BDPodAnnotationPrefix)] = policyAnnotations.AsString()
+	newAnnotations["pod.scanner-version"] = podData.GetScanClientVersion()
+	newAnnotations["pod.server-version"] = podData.GetHubVersion()
 
 	return newAnnotations
 }

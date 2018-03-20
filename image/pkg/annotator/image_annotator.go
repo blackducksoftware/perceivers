@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/perceivers/image/pkg/metrics"
-	bdannotations "github.com/blackducksoftware/perceivers/pkg/annotations"
+	"github.com/blackducksoftware/perceivers/pkg/annotations"
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	"github.com/blackducksoftware/perceivers/pkg/docker"
 	"github.com/blackducksoftware/perceivers/pkg/utils"
@@ -49,13 +49,15 @@ import (
 type ImageAnnotator struct {
 	client         *imageclient.ImageV1Client
 	scanResultsURL string
+	h              annotations.ImageAnnotatorHandler
 }
 
 // NewImageAnnotator creates a new ImageAnnotator object
-func NewImageAnnotator(ic *imageclient.ImageV1Client, perceptorURL string) *ImageAnnotator {
+func NewImageAnnotator(ic *imageclient.ImageV1Client, perceptorURL string, handler annotations.ImageAnnotatorHandler) *ImageAnnotator {
 	return &ImageAnnotator{
 		client:         ic,
 		scanResultsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ScanResultsPath),
+		h:              handler,
 	}
 }
 
@@ -156,7 +158,7 @@ func (ia *ImageAnnotator) addAnnotationsToImages(results perceptorapi.ScanResult
 			continue
 		}
 
-		imageAnnotations := bdannotations.NewBlackDuckImageAnnotation(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL, results.HubVersion, results.HubScanClientVersion)
+		imageAnnotations := annotations.NewImageAnnotationData(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL, results.HubVersion, results.HubScanClientVersion)
 
 		// Update the image if any label or annotation isn't correct
 		if ia.addImageAnnotations(fullImageName, osImage, imageAnnotations) ||
@@ -174,7 +176,7 @@ func (ia *ImageAnnotator) addAnnotationsToImages(results perceptorapi.ScanResult
 	}
 }
 
-func (ia *ImageAnnotator) addImageAnnotations(name string, image *v1.Image, imageAnnotations *bdannotations.BlackDuckImageAnnotation) bool {
+func (ia *ImageAnnotator) addImageAnnotations(name string, image *v1.Image, imageAnnotations *annotations.ImageAnnotationData) bool {
 	// Get existing annotations on the image
 	currentAnnotations := image.GetAnnotations()
 	if currentAnnotations == nil {
@@ -182,11 +184,11 @@ func (ia *ImageAnnotator) addImageAnnotations(name string, image *v1.Image, imag
 	}
 
 	// Generate the annotations that should be on the image
-	newAnnotations := bdannotations.CreateImageAnnotations(imageAnnotations, "", 0)
+	newAnnotations := ia.h.CreateImageAnnotations(imageAnnotations, "", 0)
 
 	// Apply updated annotations to the image if the existing annotations don't
 	// contain the expected entries
-	if !bdannotations.MapContainsBlackDuckEntries(currentAnnotations, newAnnotations) {
+	if !ia.h.CompareMaps(currentAnnotations, newAnnotations) {
 		metrics.RecordError("image_controller", "annotations are missing or incorrect")
 		log.Infof("annotations are missing or incorrect on image %s.  Expected %v to contain %v", name, currentAnnotations, newAnnotations)
 		setAnnotationsStart := time.Now()
@@ -197,7 +199,7 @@ func (ia *ImageAnnotator) addImageAnnotations(name string, image *v1.Image, imag
 	return false
 }
 
-func (ia *ImageAnnotator) addImageLabels(name string, image *v1.Image, imageAnnotations *bdannotations.BlackDuckImageAnnotation) bool {
+func (ia *ImageAnnotator) addImageLabels(name string, image *v1.Image, imageAnnotations *annotations.ImageAnnotationData) bool {
 	// Get existing labels on the image
 	currentLabels := image.GetLabels()
 	if currentLabels == nil {
@@ -205,11 +207,11 @@ func (ia *ImageAnnotator) addImageLabels(name string, image *v1.Image, imageAnno
 	}
 
 	// Generate the labels that should be on the image
-	newLabels := bdannotations.CreateImageLabels(imageAnnotations, "", 0)
+	newLabels := ia.h.CreateImageLabels(imageAnnotations, "", 0)
 
 	// Apply updated labels to the image if the existing annotations don't
 	// contain the expected entries
-	if !bdannotations.MapContainsBlackDuckEntries(currentLabels, newLabels) {
+	if !ia.h.CompareMaps(currentLabels, newLabels) {
 		metrics.RecordError("image_controller", "labels are missing or incorrect")
 		log.Infof("labels are missing or incorrect on image %s.  Expected %v to contain %v", name, currentLabels, newLabels)
 		setLabelsStart := time.Now()

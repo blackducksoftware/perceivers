@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -30,6 +30,7 @@ import (
 	"github.com/blackducksoftware/perceivers/image/pkg/annotator"
 	"github.com/blackducksoftware/perceivers/image/pkg/controller"
 	"github.com/blackducksoftware/perceivers/image/pkg/dumper"
+	"github.com/blackducksoftware/perceivers/pkg/annotations"
 
 	"k8s.io/client-go/rest"
 
@@ -56,7 +57,12 @@ type ImagePerceiver struct {
 }
 
 // NewImagePerceiver creates a new ImagePerceiver object
-func NewImagePerceiver(config *ImagePerceiverConfig) (*ImagePerceiver, error) {
+func NewImagePerceiver(handler annotations.ImageAnnotatorHandler) (*ImagePerceiver, error) {
+	config, err := GetImagePerceiverConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config: %v", err)
+	}
+
 	// Create a kube client from in cluster configuration
 	clusterConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -74,8 +80,8 @@ func NewImagePerceiver(config *ImagePerceiverConfig) (*ImagePerceiver, error) {
 
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.PerceptorHost, config.PerceptorPort)
 	p := ImagePerceiver{
-		ImageController:    controller.NewImageController(imageClient, perceptorURL),
-		ImageAnnotator:     annotator.NewImageAnnotator(imageClient, perceptorURL),
+		ImageController:    controller.NewImageController(imageClient, perceptorURL, handler),
+		ImageAnnotator:     annotator.NewImageAnnotator(imageClient, perceptorURL, handler),
 		annotationInterval: time.Second * time.Duration(config.AnnotationIntervalSeconds),
 		ImageDumper:        dumper.NewImageDumper(imageClient, perceptorURL),
 		dumpInterval:       time.Minute * time.Duration(config.DumpIntervalMinutes),

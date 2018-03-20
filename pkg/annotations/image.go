@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -26,109 +26,99 @@ import (
 	"strings"
 )
 
-// BDImageAnnotationPrefix is the prefix used for BlackDuckAnnotations in image annotations
-var BDImageAnnotationPrefix = "quality.image.openshift.io"
-
-// BlackDuckImageAnnotation describes the data model for image annotation
-type BlackDuckImageAnnotation struct {
+// ImageAnnotationData describes the data model for image annotation
+type ImageAnnotationData struct {
 	policyViolationCount int
 	vulnerabilityCount   int
 	overallStatus        string
 	componentsURL        string
-	hubVersion           string
+	serverVersion        string
 	scanClientVersion    string
 }
 
-// NewBlackDuckImageAnnotation creates a new BlackDuckImageAnnotation object
-func NewBlackDuckImageAnnotation(policyViolationCount int, vulnerabilityCount int, overallStatus string, url string, hubVersion string, scVersion string) *BlackDuckImageAnnotation {
-	return &BlackDuckImageAnnotation{
+// NewImageAnnotationData creates a new ImageAnnotationData object
+func NewImageAnnotationData(policyViolationCount int, vulnerabilityCount int, overallStatus string, url string, serverVersion string, scVersion string) *ImageAnnotationData {
+	return &ImageAnnotationData{
 		policyViolationCount: policyViolationCount,
 		vulnerabilityCount:   vulnerabilityCount,
 		overallStatus:        overallStatus,
 		componentsURL:        url,
-		hubVersion:           hubVersion,
+		serverVersion:        serverVersion,
 		scanClientVersion:    scVersion,
 	}
 }
 
 // HasPolicyViolations returns true if the image has any policy violations
-func (bdia *BlackDuckImageAnnotation) HasPolicyViolations() bool {
-	return bdia.policyViolationCount > 0
+func (iad *ImageAnnotationData) HasPolicyViolations() bool {
+	return iad.policyViolationCount > 0
 }
 
 // HasVulnerabilities returns true if the image has any vulnerabilities
-func (bdia *BlackDuckImageAnnotation) HasVulnerabilities() bool {
-	return bdia.vulnerabilityCount > 0
+func (iad *ImageAnnotationData) HasVulnerabilities() bool {
+	return iad.vulnerabilityCount > 0
 }
 
 // GetVulnerabilityCount returns the number of image vulnerabilities
-func (bdia *BlackDuckImageAnnotation) GetVulnerabilityCount() int {
-	return bdia.vulnerabilityCount
+func (iad *ImageAnnotationData) GetVulnerabilityCount() int {
+	return iad.vulnerabilityCount
 }
 
 // GetPolicyViolationCount returns the number of image policy violations
-func (bdia *BlackDuckImageAnnotation) GetPolicyViolationCount() int {
-	return bdia.policyViolationCount
+func (iad *ImageAnnotationData) GetPolicyViolationCount() int {
+	return iad.policyViolationCount
 }
 
-// GetComponentsURL returns the image componenets URL
-func (bdia *BlackDuckImageAnnotation) GetComponentsURL() string {
-	return bdia.componentsURL
+// GetComponentsURL returns the image components URL
+func (iad *ImageAnnotationData) GetComponentsURL() string {
+	return iad.componentsURL
 }
 
 // GetOverallStatus returns the image overall status
-func (bdia *BlackDuckImageAnnotation) GetOverallStatus() string {
-	return bdia.overallStatus
+func (iad *ImageAnnotationData) GetOverallStatus() string {
+	return iad.overallStatus
 }
 
-// GetHubVersion returns the version of the hub that provided the information
-func (bdia *BlackDuckImageAnnotation) GetHubVersion() string {
-	return bdia.hubVersion
+// GetServerVersion returns the version of the hub that provided the information
+func (iad *ImageAnnotationData) GetServerVersion() string {
+	return iad.serverVersion
 }
 
 // GetScanClientVersion returns the version of the scan client used to scan the image
-func (bdia *BlackDuckImageAnnotation) GetScanClientVersion() string {
-	return bdia.scanClientVersion
+func (iad *ImageAnnotationData) GetScanClientVersion() string {
+	return iad.scanClientVersion
 }
 
-// CreateImageLabels returns a map of labels from a BlackDuckImageAnnotation object
-func CreateImageLabels(imageAnnotations *BlackDuckImageAnnotation, name string, count int) map[string]string {
+// CreateImageLabels returns a map of labels from a ImageAnnotationData object
+func CreateImageLabels(obj interface{}, name string, count int) map[string]string {
+	imageData := obj.(*ImageAnnotationData)
 	imagePostfix := ""
 	labels := make(map[string]string)
 
 	if len(name) > 0 {
 		imagePostfix = fmt.Sprintf("%d", count)
-		labels[fmt.Sprintf("com.blackducksoftware.image%d", count)] = strings.Replace(name, "/", ".", -1)
+		labels[fmt.Sprintf("image%d", count)] = strings.Replace(name, "/", ".", -1)
 	}
-	labels[fmt.Sprintf("com.blackducksoftware.image%s.policy-violations", imagePostfix)] = fmt.Sprintf("%d", imageAnnotations.GetPolicyViolationCount())
-	labels[fmt.Sprintf("com.blackducksoftware.image%s.has-policy-violations", imagePostfix)] = fmt.Sprintf("%t", imageAnnotations.HasPolicyViolations())
-	labels[fmt.Sprintf("com.blackducksoftware.image%s.vulnerabilities", imagePostfix)] = fmt.Sprintf("%d", imageAnnotations.GetVulnerabilityCount())
-	labels[fmt.Sprintf("com.blackducksoftware.image%s.has-vulnerabilities", imagePostfix)] = fmt.Sprintf("%t", imageAnnotations.HasVulnerabilities())
-	labels[fmt.Sprintf("com.blackducksoftware.image%s.overall-status", imagePostfix)] = imageAnnotations.GetOverallStatus()
+	labels[fmt.Sprintf("image%s.policy-violations", imagePostfix)] = fmt.Sprintf("%d", imageData.GetPolicyViolationCount())
+	labels[fmt.Sprintf("image%s.vulnerabilities", imagePostfix)] = fmt.Sprintf("%d", imageData.GetVulnerabilityCount())
+	labels[fmt.Sprintf("image%s.overall-status", imagePostfix)] = imageData.GetOverallStatus()
 
 	return labels
 }
 
-// CreateImageAnnotations returns a map of annotations from a BlackDuckImageAnnotation object
-func CreateImageAnnotations(imageAnnotations *BlackDuckImageAnnotation, name string, count int) map[string]string {
+// CreateImageAnnotations returns a map of annotations from a ImageAnnotationData object
+func CreateImageAnnotations(obj interface{}, name string, count int) map[string]string {
+	imageData := obj.(*ImageAnnotationData)
 	imagePrefix := ""
 	newAnnotations := make(map[string]string)
 
 	if len(name) > 0 {
 		imagePrefix = fmt.Sprintf("image%d.", count)
 		imageName := strings.Replace(name, "/", ".", -1)
-		newAnnotations[fmt.Sprintf("%sblackducksoftware.com", imagePrefix)] = imageName
-		newAnnotations[fmt.Sprintf("%s%s", imagePrefix, BDImageAnnotationPrefix)] = imageName
+		newAnnotations[fmt.Sprintf("%s", imagePrefix)] = imageName
 	}
-	newAnnotations[fmt.Sprintf("%sblackducksoftware.com/hub-scanner-version", imagePrefix)] = imageAnnotations.GetScanClientVersion()
-	newAnnotations[fmt.Sprintf("%sblackducksoftware.com/attestation-hub-server", imagePrefix)] = imageAnnotations.GetHubVersion()
-	newAnnotations[fmt.Sprintf("%sblackducksoftware.com/project-endpoint", imagePrefix)] = imageAnnotations.GetComponentsURL()
-
-	vulnAnnotations := CreateBlackDuckVulnerabilityAnnotation(imageAnnotations.HasVulnerabilities() == true, imageAnnotations.GetComponentsURL(), imageAnnotations.GetVulnerabilityCount())
-	policyAnnotations := CreateBlackDuckPolicyAnnotation(imageAnnotations.HasPolicyViolations() == true, imageAnnotations.GetComponentsURL(), imageAnnotations.GetPolicyViolationCount())
-
-	newAnnotations[fmt.Sprintf("%s%s/vulnerability.blackduck", imagePrefix, BDImageAnnotationPrefix)] = vulnAnnotations.AsString()
-	newAnnotations[fmt.Sprintf("%s%s/policy.blackduck", imagePrefix, BDImageAnnotationPrefix)] = policyAnnotations.AsString()
+	newAnnotations[fmt.Sprintf("%sscanner-version", imagePrefix)] = imageData.GetScanClientVersion()
+	newAnnotations[fmt.Sprintf("%sserver-version", imagePrefix)] = imageData.GetServerVersion()
+	newAnnotations[fmt.Sprintf("%sproject-endpoint", imagePrefix)] = imageData.GetComponentsURL()
 
 	return newAnnotations
 }

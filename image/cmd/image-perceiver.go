@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Black Duck Software, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -25,6 +25,7 @@ import (
 	"fmt"
 
 	"github.com/blackducksoftware/perceivers/image/cmd/app"
+	"github.com/blackducksoftware/perceivers/pkg/annotations"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -32,13 +33,15 @@ import (
 func main() {
 	log.Info("starting image-perceiver")
 
-	config, err := app.GetImagePerceiverConfig()
-	if err != nil {
-		panic(fmt.Errorf("failed to read config: %v", err))
+	handler := annotations.ImageAnnotatorHandlerFuncs{
+		ImageLabelCreationFunc:      annotations.CreateImageLabels,
+		ImageAnnotationCreationFunc: annotations.CreateImageAnnotations,
+		MapCompareHandlerFuncs: annotations.MapCompareHandlerFuncs{
+			MapCompareFunc: annotations.StringMapContains,
+		},
 	}
-
 	// Create the Image Perceiver
-	perceiver, err := app.NewImagePerceiver(config)
+	perceiver, err := app.NewImagePerceiver(handler)
 	if err != nil {
 		panic(fmt.Errorf("failed to create image-perceiver: %v", err))
 	}
