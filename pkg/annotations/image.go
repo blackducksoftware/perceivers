@@ -101,6 +101,9 @@ func CreateImageLabels(obj interface{}, name string, count int) map[string]strin
 	labels[fmt.Sprintf("image%s.policy-violations", imagePostfix)] = fmt.Sprintf("%d", imageData.GetPolicyViolationCount())
 	labels[fmt.Sprintf("image%s.vulnerabilities", imagePostfix)] = fmt.Sprintf("%d", imageData.GetVulnerabilityCount())
 	labels[fmt.Sprintf("image%s.overall-status", imagePostfix)] = imageData.GetOverallStatus()
+	labels[fmt.Sprintf("image%s.scanner-version", imagePostfix)] = imageData.GetScanClientVersion()
+	labels[fmt.Sprintf("image%s.server-version", imagePostfix)] = imageData.GetServerVersion()
+	labels[fmt.Sprintf("image%s.project-endpoint", imagePostfix)] = imageData.GetComponentsURL()
 
 	return labels
 }
@@ -116,6 +119,9 @@ func CreateImageAnnotations(obj interface{}, name string, count int) map[string]
 		imageName := strings.Replace(name, "/", ".", -1)
 		newAnnotations[fmt.Sprintf("%s", imagePrefix)] = imageName
 	}
+	newAnnotations[fmt.Sprintf("%spolicy-violations", imagePrefix)] = fmt.Sprintf("%d", imageData.GetPolicyViolationCount())
+	newAnnotations[fmt.Sprintf("%svulnerabilities", imagePrefix)] = fmt.Sprintf("%d", imageData.GetVulnerabilityCount())
+	newAnnotations[fmt.Sprintf("%soverall-status", imagePrefix)] = imageData.GetOverallStatus()
 	newAnnotations[fmt.Sprintf("%sscanner-version", imagePrefix)] = imageData.GetScanClientVersion()
 	newAnnotations[fmt.Sprintf("%sserver-version", imagePrefix)] = imageData.GetServerVersion()
 	newAnnotations[fmt.Sprintf("%sproject-endpoint", imagePrefix)] = imageData.GetComponentsURL()
