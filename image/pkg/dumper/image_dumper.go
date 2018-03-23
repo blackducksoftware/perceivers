@@ -109,7 +109,7 @@ func (id *ImageDumper) getAllImagesAsPerceptorImages() ([]perceptorapi.Image, er
 	for _, image := range images.Items {
 		perceptorImage, err := mapper.NewPerceptorImageFromOSImage(&image)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		perceptorImages = append(perceptorImages, *perceptorImage)
 	}
