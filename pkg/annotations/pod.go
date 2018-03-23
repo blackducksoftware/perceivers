@@ -87,8 +87,6 @@ func CreatePodLabels(obj interface{}) map[string]string {
 	labels["pod.policy-violations"] = fmt.Sprintf("%d", podData.GetPolicyViolationCount())
 	labels["pod.vulnerabilities"] = fmt.Sprintf("%d", podData.GetVulnerabilityCount())
 	labels["pod.overall-status"] = podData.GetOverallStatus()
-	labels["pod.scanner-version"] = podData.GetScanClientVersion()
-	labels["pod.server-version"] = podData.GetHubVersion()
 
 	return labels
 }
