@@ -113,7 +113,7 @@ func (pd *PodDumper) getAllPodsAsPerceptorPods() ([]perceptorapi.Pod, error) {
 		perceptorPod, err := mapper.NewPerceptorPodFromKubePod(&pod)
 		if err != nil {
 			metrics.RecordError("dumper", "unable to convert kube pod to perceptor pod")
-			return nil, err
+			continue
 		}
 		perceptorPods = append(perceptorPods, *perceptorPod)
 	}
