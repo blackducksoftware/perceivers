@@ -109,6 +109,7 @@ func (id *ImageDumper) getAllImagesAsPerceptorImages() ([]perceptorapi.Image, er
 	for _, image := range images.Items {
 		perceptorImage, err := mapper.NewPerceptorImageFromOSImage(&image)
 		if err != nil {
+			metrics.RecordError("dumper", "unable to convert image to perceptor image")
 			continue
 		}
 		perceptorImages = append(perceptorImages, *perceptorImage)
