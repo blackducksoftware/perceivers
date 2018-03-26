@@ -91,7 +91,7 @@ func init() {
 	totalImagesAnnotated = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "perceptor",
 		Subsystem: "image_perceiver",
-		Name:      "annotations",
+		Name:      "total_annotations",
 		Help:      "images annotated",
 	}, []string{"annotator", "images_annotated"})
 

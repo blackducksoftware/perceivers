@@ -91,7 +91,7 @@ func init() {
 	totalPodsAnnotated = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "perceptor",
 		Subsystem: "pod_perceiver",
-		Name:      "annotations",
+		Name:      "total_annotations",
 		Help:      "pods annotated",
 	}, []string{"annotator", "pods_annotated"})
 
