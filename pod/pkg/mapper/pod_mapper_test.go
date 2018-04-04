@@ -104,11 +104,6 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 			},
 		},
 	}
-	missingImageIDPerceptorPod := perceptorapi.Pod{
-		Name:       "podName",
-		Namespace:  "ns",
-		Containers: []perceptorapi.Container{},
-	}
 
 	testcases := []struct {
 		description string
@@ -131,8 +126,8 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 		{
 			description: "pod with no ImageID",
 			pod:         &missingImageIDPod,
-			expected:    &missingImageIDPerceptorPod,
-			shouldPass:  true,
+			expected:    nil,
+			shouldPass:  false,
 		},
 	}
 
