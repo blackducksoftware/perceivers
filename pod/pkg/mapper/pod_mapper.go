@@ -46,6 +46,9 @@ func NewPerceptorPodFromKubePod(kubePod *v1.Pod) (*perceptorapi.Pod, error) {
 			}
 			addedCont := perceptorapi.NewContainer(*perceptorapi.NewImage(name, sha, newCont.Image), newCont.Name)
 			containers = append(containers, *addedCont)
+		} else {
+			metrics.RecordError("pod_mapper", "empty kubernetes imageID")
+			return nil, fmt.Errorf("empty kubernetes imageID from pod %s/%s, container %s", kubePod.Namespace, kubePod.Name, newCont.Name)
 		}
 	}
 	return perceptorapi.NewPod(kubePod.Name, string(kubePod.UID), kubePod.Namespace, containers), nil
