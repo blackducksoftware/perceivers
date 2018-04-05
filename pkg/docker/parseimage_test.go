@@ -35,31 +35,52 @@ func TestParseImageIDString(t *testing.T) {
 		shouldPass  bool
 	}{
 		{
-			description: "valid image name",
+			description: "valid format",
+			prefix:      "docker-pullable://",
+			name:        "abc",
+			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
+			shouldPass:  true,
+		},
+		{
+			description: "valid format with 2 directories",
 			prefix:      "docker-pullable://",
 			name:        "abc/def",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  true,
 		},
 		{
-			description: "no prefix",
-			prefix:      "",
-			name:        "abc/def",
+			description: "valid format with 3 directories",
+			prefix:      "docker-pullable://",
+			name:        "abc/def/ghi",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  true,
 		},
 		{
-			description: "missing image name",
+			description: "missing prefix",
 			prefix:      "",
+			name:        "abc/def",
+			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
+			shouldPass:  false,
+		},
+		{
+			description: "missing image name",
+			prefix:      "docker-pullable://",
 			name:        "",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  false,
 		},
 		{
 			description: "missing sha",
-			prefix:      "",
+			prefix:      "docker-pullable://",
 			name:        "abc/def",
 			sha:         "",
+			shouldPass:  false,
+		},
+		{
+			description: "Incorrect prefix",
+			prefix:      "docker://",
+			name:        "abc",
+			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  false,
 		},
 	}
@@ -67,6 +88,7 @@ func TestParseImageIDString(t *testing.T) {
 	for _, tc := range testcases {
 		imageID := fmt.Sprintf("%s%s@sha256:%s", tc.prefix, tc.name, tc.sha)
 		name, sha, err := ParseImageIDString(imageID)
+		fmt.Printf("Test: %s, imageID: %s, name: %s, sha: %s, err: %s \n", tc.description, imageID, name, sha, err)
 		if err != nil && tc.shouldPass {
 			t.Errorf("[%s] unexpected error: %v, imageID %s", tc.description, err, imageID)
 		}
@@ -75,6 +97,9 @@ func TestParseImageIDString(t *testing.T) {
 		}
 		if sha != tc.sha && tc.shouldPass {
 			t.Errorf("[%s] sha is wrong.  Expected %s got %s", tc.description, tc.sha, sha)
+		}
+		if !tc.shouldPass && err == nil {
+			t.Errorf("The error should not be empty, description: %s , prefix: %s, name: %s, sha: %s", tc.description, tc.prefix, name, sha)
 		}
 	}
 }
