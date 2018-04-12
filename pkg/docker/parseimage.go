@@ -48,7 +48,7 @@ func ParseImageIDString(imageID string) (string, string, error) {
 
 	name, digest, err = parseDockerImageString(imageID)
 	if err == nil {
-		return name, digest, fmt.Errorf("Scanning of pod image %s is not supported!!", imageID)
+		return name, digest, fmt.Errorf("Scanning of unscheduled images (%s) is not supported, ", imageID)
 	} else {
 		return name, digest, fmt.Errorf("Unable to match dockerPullableRegexp regex <%s> to input <%s>", dockerPullableRegexp.String(), imageID)
 	}
