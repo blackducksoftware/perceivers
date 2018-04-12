@@ -96,10 +96,7 @@ func CreateImageLabels(obj interface{}, name string, count int) map[string]strin
 
 	if len(name) > 0 {
 		imagePostfix = fmt.Sprintf("%d", count)
-		name = strings.Replace(name, "/", ".", -1)
-		// some images end up having 'image:port' format, which breaks the req'd regex format.
-		name = strings.Replace(name, ":", ".", -1)
-		labels[fmt.Sprintf("image%d", count)] = name
+		labels[fmt.Sprintf("image%d", count)] = strings.Replace(name, "/", ".", -1)
 	}
 	labels[fmt.Sprintf("image%s.policy-violations", imagePostfix)] = fmt.Sprintf("%d", imageData.GetPolicyViolationCount())
 	labels[fmt.Sprintf("image%s.vulnerabilities", imagePostfix)] = fmt.Sprintf("%d", imageData.GetVulnerabilityCount())
