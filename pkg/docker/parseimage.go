@@ -39,11 +39,11 @@ func ParseImageIDString(imageID string) (string, string, error) {
 	// Since the GO doesn't support for "don't start with string regex", had an ugly fix with HasPrefix in below code
 	if strings.HasPrefix(imageID, "docker-pullable://") {
 		return parseDockerPullableImageString(imageID)
-	} else if strings.HasPrefix(imageID, "docker://") {
-		return "", "", fmt.Errorf("scanning of unscheduled images (%s) is not supported, ", imageID)
-	} else {
-		return parseImageString(imageID)
 	}
+	if strings.HasPrefix(imageID, "docker://") {
+		return "", "", fmt.Errorf("scanning of unscheduled images (%s) is not supported, ", imageID)
+	}
+	return parseImageString(imageID)
 }
 
 func parseImageString(imageID string) (string, string, error) {
