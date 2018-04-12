@@ -35,23 +35,21 @@ var imageRegexp = regexp.MustCompile("^(.+)@sha256:([a-zA-Z0-9]+)$")
 // Example image id:
 //   docker-pullable://registry.kipp.blackducksoftware.com/blackducksoftware/hub-registration@sha256:cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043
 func ParseImageIDString(imageID string) (string, string, error) {
-	name, digest, err := parseDockerPullableImageString(imageID)
-	// Since the GO doesn't support for "don't start with string regex", had an ugly fix with HasPrefix in below line
-	if err == nil || strings.HasPrefix(imageID, "docker-pullable://") {
-		return name, digest, err
-	}
-
-	name, digest, err = parseImageString(imageID)
-	if err == nil {
-		return name, digest, err
-	}
-
-	name, digest, err = parseDockerImageString(imageID)
-	if err == nil {
-		return name, digest, fmt.Errorf("Scanning of unscheduled images (%s) is not supported, ", imageID)
+	var name string
+	var digest string
+	var err error
+	// Since the GO doesn't support for "don't start with string regex", had an ugly fix with HasPrefix in below code
+	if strings.HasPrefix(imageID, "docker-pullable://") {
+		name, digest, err = parseDockerPullableImageString(imageID)
+	} else if strings.HasPrefix(imageID, "docker://") {
+		name, digest, err = parseDockerImageString(imageID)
+		if err == nil {
+			return name, digest, fmt.Errorf("Scanning of unscheduled images (%s) is not supported, ", imageID)
+		}
 	} else {
-		return name, digest, err
+		name, digest, err = parseImageString(imageID)
 	}
+	return name, digest, err
 }
 
 func parseImageString(imageID string) (string, string, error) {
