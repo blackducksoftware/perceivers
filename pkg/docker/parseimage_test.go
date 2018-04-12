@@ -56,13 +56,6 @@ func TestParseImageIDString(t *testing.T) {
 			shouldPass:  true,
 		},
 		{
-			description: "valid format with private registry",
-			prefix:      "docker-pullable://",
-			name:        "docker-registry.default.svc:5000/def/ghi",
-			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
-			shouldPass:  true,
-		},
-		{
 			description: "missing prefix",
 			prefix:      "",
 			name:        "abc/def",
