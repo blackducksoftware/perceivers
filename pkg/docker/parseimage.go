@@ -28,28 +28,24 @@ import (
 )
 
 var dockerPullableRegexp = regexp.MustCompile("^docker-pullable://(.+)@sha256:([a-zA-Z0-9]+)$")
-var dockerRegexp = regexp.MustCompile("^docker://sha256:([a-zA-Z0-9]+)$")
+
+//var dockerRegexp = regexp.MustCompile("^docker://sha256:([a-zA-Z0-9]+)$")
 var imageRegexp = regexp.MustCompile("^(.+)@sha256:([a-zA-Z0-9]+)$")
 
 // ParseImageIDString parses an ImageID that can pull an image from docker
 // Example image id:
 //   docker-pullable://registry.kipp.blackducksoftware.com/blackducksoftware/hub-registration@sha256:cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043
 func ParseImageIDString(imageID string) (string, string, error) {
-	var name string
-	var digest string
-	var err error
 	// Since the GO doesn't support for "don't start with string regex", had an ugly fix with HasPrefix in below code
 	if strings.HasPrefix(imageID, "docker-pullable://") {
-		name, digest, err = parseDockerPullableImageString(imageID)
+		name, digest, err := parseDockerPullableImageString(imageID)
+		return name, digest, err
 	} else if strings.HasPrefix(imageID, "docker://") {
-		name, digest, err = parseDockerImageString(imageID)
-		if err == nil {
-			return name, digest, fmt.Errorf("Scanning of unscheduled images (%s) is not supported, ", imageID)
-		}
+		return "", "", fmt.Errorf("scanning of unscheduled images (%s) is not supported, ", imageID)
 	} else {
-		name, digest, err = parseImageString(imageID)
+		name, digest, err := parseImageString(imageID)
+		return name, digest, err
 	}
-	return name, digest, err
 }
 
 func parseImageString(imageID string) (string, string, error) {
@@ -62,14 +58,14 @@ func parseImageString(imageID string) (string, string, error) {
 	return name, digest, nil
 }
 
-func parseDockerImageString(imageID string) (string, string, error) {
-	match := dockerRegexp.FindStringSubmatch(imageID)
-	if len(match) != 2 {
-		return "", "", fmt.Errorf("unable to match dockerRegexp regex <%s> to input <%s>", dockerRegexp.String(), imageID)
-	}
-	digest := match[1]
-	return "", digest, nil
-}
+// func parseDockerImageString(imageID string) (string, string, error) {
+// 	match := dockerRegexp.FindStringSubmatch(imageID)
+// 	if len(match) != 2 {
+// 		return "", "", fmt.Errorf("unable to match dockerRegexp regex <%s> to input <%s>", dockerRegexp.String(), imageID)
+// 	}
+// 	digest := match[1]
+// 	return "", digest, nil
+// }
 
 func parseDockerPullableImageString(imageID string) (string, string, error) {
 	match := dockerPullableRegexp.FindStringSubmatch(imageID)
