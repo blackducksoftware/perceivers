@@ -96,9 +96,7 @@ func CreateImageLabels(obj interface{}, name string, count int) map[string]strin
 
 	if len(name) > 0 {
 		imagePostfix = fmt.Sprintf("%d", count)
-		name = strings.Replace(name, "/", ".", -1)
-		name = strings.Replace(name, ":", ".", -1)
-		labels[fmt.Sprintf("image%d", count)] = name
+		labels[fmt.Sprintf("image%d", count)] = strings.Replace(name, "/", ".", -1)
 	}
 	labels[fmt.Sprintf("image%s.policy-violations", imagePostfix)] = fmt.Sprintf("%d", imageData.GetPolicyViolationCount())
 	labels[fmt.Sprintf("image%s.vulnerabilities", imagePostfix)] = fmt.Sprintf("%d", imageData.GetVulnerabilityCount())
