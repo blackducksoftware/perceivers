@@ -67,7 +67,7 @@ func TestParseImageIDString(t *testing.T) {
 			prefix:      "",
 			name:        "abc/def",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
-			shouldPass:  true,
+			shouldPass:  false,
 		},
 		{
 			description: "missing image name",
@@ -83,12 +83,19 @@ func TestParseImageIDString(t *testing.T) {
 			sha:         "",
 			shouldPass:  false,
 		},
+		{
+			description: "Incorrect prefix",
+			prefix:      "docker://",
+			name:        "abc",
+			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
+			shouldPass:  false,
+		},
 	}
 
 	for _, tc := range testcases {
 		imageID := fmt.Sprintf("%s%s@sha256:%s", tc.prefix, tc.name, tc.sha)
 		name, sha, err := ParseImageIDString(imageID)
-		fmt.Printf("Test: %s, err: %s, imageID: %s, name: %s, sha: %s \n", tc.description, err, imageID, name, sha)
+		fmt.Printf("Test: %s, imageID: %s, name: %s, sha: %s, err: %s \n", tc.description, imageID, name, sha, err)
 		if err != nil && tc.shouldPass {
 			t.Errorf("[%s] unexpected error: %v, imageID %s", tc.description, err, imageID)
 		}
@@ -101,12 +108,5 @@ func TestParseImageIDString(t *testing.T) {
 		if !tc.shouldPass && err == nil {
 			t.Errorf("The error should not be empty, description: %s , prefix: %s, name: %s, sha: %s", tc.description, tc.prefix, name, sha)
 		}
-	}
-
-	imageID := "docker://sha256:cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043"
-	name, sha, err := ParseImageIDString(imageID)
-	fmt.Printf("name: %s, sha: %s, err: %s \n", name, sha, err)
-	if err == nil {
-		t.Errorf("Docker regex failed, name: %s, sha: %s", name, sha)
 	}
 }
