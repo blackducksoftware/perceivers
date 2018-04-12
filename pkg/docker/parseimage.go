@@ -38,13 +38,11 @@ var imageRegexp = regexp.MustCompile("^(.+)@sha256:([a-zA-Z0-9]+)$")
 func ParseImageIDString(imageID string) (string, string, error) {
 	// Since the GO doesn't support for "don't start with string regex", had an ugly fix with HasPrefix in below code
 	if strings.HasPrefix(imageID, "docker-pullable://") {
-		name, digest, err := parseDockerPullableImageString(imageID)
-		return name, digest, err
+		return parseDockerPullableImageString(imageID)
 	} else if strings.HasPrefix(imageID, "docker://") {
 		return "", "", fmt.Errorf("scanning of unscheduled images (%s) is not supported, ", imageID)
 	} else {
-		name, digest, err := parseImageString(imageID)
-		return name, digest, err
+		return parseImageString(imageID)
 	}
 }
 
