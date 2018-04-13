@@ -37,6 +37,9 @@ import (
 // perceptor pod object
 func NewPerceptorPodFromKubePod(kubePod *v1.Pod) (*perceptorapi.Pod, error) {
 	containers := []perceptorapi.Container{}
+	if len(kubePod.Status.ContainerStatuses) == 0 {
+		return nil, fmt.Errorf("unable to instantiate perceptor pod: kube pod %s/%s has 0 container statuses", kubePod.Namespace, kubePod.Name)
+	}
 	for _, newCont := range kubePod.Status.ContainerStatuses {
 		if len(newCont.ImageID) > 0 {
 			name, sha, err := docker.ParseImageIDString(newCont.ImageID)

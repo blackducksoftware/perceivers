@@ -105,6 +105,16 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 		},
 	}
 
+	noContainerStatuses := v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "podName",
+			Namespace: "ns",
+		},
+		Status: v1.PodStatus{
+			ContainerStatuses: []v1.ContainerStatus{},
+		},
+	}
+
 	testcases := []struct {
 		description string
 		pod         *v1.Pod
@@ -126,6 +136,12 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 		{
 			description: "pod with no ImageID",
 			pod:         &missingImageIDPod,
+			expected:    nil,
+			shouldPass:  false,
+		},
+		{
+			description: "pod with no container statuses",
+			pod:         &noContainerStatuses,
 			expected:    nil,
 			shouldPass:  false,
 		},
