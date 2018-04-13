@@ -39,6 +39,10 @@ func NewPerceptorPodFromKubePod(kubePod *v1.Pod) (*perceptorapi.Pod, error) {
 	containers := []perceptorapi.Container{}
 	actual := len(kubePod.Status.ContainerStatuses)
 	expected := len(kubePod.Spec.Containers)
+	
+	// Note that even this is not a permanant solution to race conditions between
+	// unprocessed apiserver pod objects https://github.com/blackducksoftware/perceivers/issues/54
+	// Revise in the 1.0.1 timeline.
 	if actual != expected {
 		return nil, fmt.Errorf("unable to instantiate perceptor pod: kube pod %s/%s has %d container statuses, but %d containers in its spec", kubePod.Namespace, kubePod.Name, actual, expected)
 	}
