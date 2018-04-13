@@ -38,6 +38,11 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 			Name:      "invalidPod",
 			Namespace: "ns",
 		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{},
+			},
+		},
 		Status: v1.PodStatus{
 			ContainerStatuses: []v1.ContainerStatus{
 				{
@@ -51,6 +56,12 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "podName",
 			Namespace: "ns",
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{},
+				v1.Container{},
+			},
 		},
 		Status: v1.PodStatus{
 			ContainerStatuses: []v1.ContainerStatus{
@@ -95,6 +106,11 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 			Name:      "podName",
 			Namespace: "ns",
 		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{},
+			},
+		},
 		Status: v1.PodStatus{
 			ContainerStatuses: []v1.ContainerStatus{
 				{
@@ -102,6 +118,21 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 					Image: "imageName@sha256:23f2sdf23",
 				},
 			},
+		},
+	}
+
+	noContainerStatuses := v1.Pod{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{},
+			},
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "podName",
+			Namespace: "ns",
+		},
+		Status: v1.PodStatus{
+			ContainerStatuses: []v1.ContainerStatus{},
 		},
 	}
 
@@ -129,12 +160,18 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 			expected:    nil,
 			shouldPass:  false,
 		},
+		{
+			description: "pod with no container statuses",
+			pod:         &noContainerStatuses,
+			expected:    nil,
+			shouldPass:  false,
+		},
 	}
 
 	for _, tc := range testcases {
 		result, err := NewPerceptorPodFromKubePod(tc.pod)
 		if err != nil && tc.shouldPass {
-			t.Fatalf("[%s] unexpected error: %v", tc.description, err)
+			t.Errorf("[%s] unexpected error: %v", tc.description, err)
 		}
 		if result != tc.expected && !reflect.DeepEqual(result, tc.expected) {
 			t.Errorf("[%s] expected %v, got %v", tc.description, tc.expected, result)
