@@ -106,6 +106,11 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 	}
 
 	noContainerStatuses := v1.Pod{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{},
+			},
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "podName",
 			Namespace: "ns",
@@ -150,7 +155,7 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 	for _, tc := range testcases {
 		result, err := NewPerceptorPodFromKubePod(tc.pod)
 		if err != nil && tc.shouldPass {
-			t.Fatalf("[%s] unexpected error: %v", tc.description, err)
+			t.Errorf("[%s] unexpected error: %v", tc.description, err)
 		}
 		if result != tc.expected && !reflect.DeepEqual(result, tc.expected) {
 			t.Errorf("[%s] expected %v, got %v", tc.description, tc.expected, result)
