@@ -38,6 +38,11 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 			Name:      "invalidPod",
 			Namespace: "ns",
 		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{},
+			},
+		},
 		Status: v1.PodStatus{
 			ContainerStatuses: []v1.ContainerStatus{
 				{
@@ -100,6 +105,11 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "podName",
 			Namespace: "ns",
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{},
+			},
 		},
 		Status: v1.PodStatus{
 			ContainerStatuses: []v1.ContainerStatus{
