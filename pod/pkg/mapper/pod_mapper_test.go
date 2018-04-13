@@ -52,6 +52,12 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 			Name:      "podName",
 			Namespace: "ns",
 		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{},
+				v1.Container{},
+			},
+		},
 		Status: v1.PodStatus{
 			ContainerStatuses: []v1.ContainerStatus{
 				{
