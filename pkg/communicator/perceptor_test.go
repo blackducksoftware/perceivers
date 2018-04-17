@@ -51,7 +51,7 @@ func TestSendPerceptorAddDeleteEvent(t *testing.T) {
 		Name:      "test",
 		Namespace: "testNS",
 		Containers: []MockContainer{
-			MockContainer{
+			{
 				Name: "fakeC1",
 				Image: MockImage{
 					Name:        "fakeImage1",
