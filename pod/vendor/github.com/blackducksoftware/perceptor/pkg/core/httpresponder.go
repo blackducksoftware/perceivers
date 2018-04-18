@@ -22,100 +22,103 @@ under the License.
 package core
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
 	api "github.com/blackducksoftware/perceptor/pkg/api"
+	a "github.com/blackducksoftware/perceptor/pkg/core/actions"
+	model "github.com/blackducksoftware/perceptor/pkg/core/model"
 	log "github.com/sirupsen/logrus"
 )
 
 // HTTPResponder ...
 type HTTPResponder struct {
-	addPod                 chan Pod
-	updatePod              chan Pod
-	deletePod              chan string
-	addImage               chan Image
-	allPods                chan []Pod
-	allImages              chan []Image
-	postNextImage          chan func(*Image)
-	postFinishScanJob      chan api.FinishedScanClientJob
-	setConcurrentScanLimit chan int
-	getModel               chan func(json string)
-	getScanResults         chan func(scanResults api.ScanResults)
+	AddPodChannel                 chan model.Pod
+	UpdatePodChannel              chan model.Pod
+	DeletePodChannel              chan string
+	AddImageChannel               chan model.Image
+	AllPodsChannel                chan []model.Pod
+	AllImagesChannel              chan []model.Image
+	PostNextImageChannel          chan func(*model.Image)
+	PostFinishScanJobChannel      chan *a.FinishScanClient
+	SetConcurrentScanLimitChannel chan int
+	GetModelChannel               chan func(api.Model)
+	GetScanResultsChannel         chan func(scanResults api.ScanResults)
 }
 
 func NewHTTPResponder() *HTTPResponder {
 	return &HTTPResponder{
-		addPod:                 make(chan Pod),
-		updatePod:              make(chan Pod),
-		deletePod:              make(chan string),
-		addImage:               make(chan Image),
-		allPods:                make(chan []Pod),
-		allImages:              make(chan []Image),
-		postNextImage:          make(chan func(*Image)),
-		postFinishScanJob:      make(chan api.FinishedScanClientJob),
-		setConcurrentScanLimit: make(chan int),
-		getModel:               make(chan func(json string)),
-		getScanResults:         make(chan func(api.ScanResults))}
+		AddPodChannel:                 make(chan model.Pod),
+		UpdatePodChannel:              make(chan model.Pod),
+		DeletePodChannel:              make(chan string),
+		AddImageChannel:               make(chan model.Image),
+		AllPodsChannel:                make(chan []model.Pod),
+		AllImagesChannel:              make(chan []model.Image),
+		PostNextImageChannel:          make(chan func(*model.Image)),
+		PostFinishScanJobChannel:      make(chan *a.FinishScanClient),
+		SetConcurrentScanLimitChannel: make(chan int),
+		GetModelChannel:               make(chan func(api.Model)),
+		GetScanResultsChannel:         make(chan func(api.ScanResults))}
 }
 
-func (hr *HTTPResponder) GetModel() string {
+func (hr *HTTPResponder) GetModel() api.Model {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	var modelString string
-	hr.getModel <- func(json string) {
-		modelString = json
+	var model api.Model
+	hr.GetModelChannel <- func(tempModel api.Model) {
+		model = tempModel
 		wg.Done()
 	}
 	wg.Wait()
-	return modelString
+	return model
 }
 
 func (hr *HTTPResponder) AddPod(apiPod api.Pod) {
 	recordAddPod()
-	pod := *newPod(apiPod)
-	hr.addPod <- pod
-	log.Infof("handled add pod %s -- %s", pod.UID, pod.QualifiedName())
+	pod := *model.ApiPodToCorePod(apiPod)
+	hr.AddPodChannel <- pod
+	log.Debugf("handled add pod %s -- %s", pod.UID, pod.QualifiedName())
 }
 
 func (hr *HTTPResponder) DeletePod(qualifiedName string) {
 	recordDeletePod()
-	hr.deletePod <- qualifiedName
-	log.Infof("handled delete pod %s", qualifiedName)
+	hr.DeletePodChannel <- qualifiedName
+	log.Debugf("handled delete pod %s", qualifiedName)
 }
 
 func (hr *HTTPResponder) UpdatePod(apiPod api.Pod) {
 	recordUpdatePod()
-	pod := *newPod(apiPod)
-	hr.updatePod <- pod
-	log.Infof("handled update pod %s -- %s", pod.UID, pod.QualifiedName())
+	pod := *model.ApiPodToCorePod(apiPod)
+	hr.UpdatePodChannel <- pod
+	log.Debugf("handled update pod %s -- %s", pod.UID, pod.QualifiedName())
 }
 
 func (hr *HTTPResponder) AddImage(apiImage api.Image) {
 	recordAddImage()
-	image := *newImage(apiImage)
-	hr.addImage <- image
-	log.Infof("handled add image %s", image.HumanReadableName())
+	image := *model.ApiImageToCoreImage(apiImage)
+	hr.AddImageChannel <- image
+	log.Debugf("handled add image %s", image.PullSpec())
 }
 
 func (hr *HTTPResponder) UpdateAllPods(allPods api.AllPods) {
 	recordAllPods()
-	pods := []Pod{}
+	pods := []model.Pod{}
 	for _, apiPod := range allPods.Pods {
-		pods = append(pods, *newPod(apiPod))
+		pods = append(pods, *model.ApiPodToCorePod(apiPod))
 	}
-	hr.allPods <- pods
-	log.Infof("handled update all pods -- %d pods", len(allPods.Pods))
+	hr.AllPodsChannel <- pods
+	log.Debugf("handled update all pods -- %d pods", len(allPods.Pods))
 }
 
 func (hr *HTTPResponder) UpdateAllImages(allImages api.AllImages) {
 	recordAllImages()
-	images := []Image{}
+	images := []model.Image{}
 	for _, apiImage := range allImages.Images {
-		images = append(images, *newImage(apiImage))
+		images = append(images, *model.ApiImageToCoreImage(apiImage))
 	}
-	hr.allImages <- images
-	log.Infof("handled update all images -- %d images", len(allImages.Images))
+	hr.AllImagesChannel <- images
+	log.Debugf("handled update all images -- %d images", len(allImages.Images))
 }
 
 // GetScanResults returns results for:
@@ -126,7 +129,7 @@ func (hr *HTTPResponder) GetScanResults() api.ScanResults {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	var scanResults api.ScanResults
-	hr.getScanResults <- func(results api.ScanResults) {
+	hr.GetScanResultsChannel <- func(results api.ScanResults) {
 		wg.Done()
 		scanResults = results
 	}
@@ -139,12 +142,13 @@ func (hr *HTTPResponder) GetNextImage() api.NextImage {
 	var wg sync.WaitGroup
 	var nextImage api.NextImage
 	wg.Add(1)
-	hr.postNextImage <- func(image *Image) {
+	hr.PostNextImageChannel <- func(image *model.Image) {
 		imageString := "null"
 		var imageSpec *api.ImageSpec
 		if image != nil {
 			imageString = image.HumanReadableName()
 			imageSpec = api.NewImageSpec(
+				image.Name,
 				image.PullSpec(),
 				string(image.Sha),
 				image.HubProjectName(),
@@ -152,7 +156,7 @@ func (hr *HTTPResponder) GetNextImage() api.NextImage {
 				image.HubScanName())
 		}
 		nextImage = *api.NewNextImage(imageSpec)
-		log.Infof("handled GET next image -- %s", imageString)
+		log.Debugf("handled GET next image -- %s", imageString)
 		wg.Done()
 	}
 	wg.Wait()
@@ -161,15 +165,22 @@ func (hr *HTTPResponder) GetNextImage() api.NextImage {
 
 func (hr *HTTPResponder) PostFinishScan(job api.FinishedScanClientJob) {
 	recordPostFinishedScan()
-	hr.postFinishScanJob <- job
-	log.Infof("handled finished scan job -- %v", job)
+	var err error
+	if job.Err == "" {
+		err = nil
+	} else {
+		err = fmt.Errorf(job.Err)
+	}
+	image := model.NewImage(job.ImageSpec.ImageName, model.DockerImageSha(job.ImageSpec.Sha))
+	hr.PostFinishScanJobChannel <- &a.FinishScanClient{Image: image, Err: err}
+	log.Debugf("handled finished scan job -- %v", job)
 }
 
 // internal use
 
 func (hr *HTTPResponder) SetConcurrentScanLimit(limit api.SetConcurrentScanLimit) {
-	hr.setConcurrentScanLimit <- limit.Limit
-	log.Infof("handled set concurrent scan limit -- %d", limit)
+	hr.SetConcurrentScanLimitChannel <- limit.Limit
+	log.Debugf("handled set concurrent scan limit -- %d", limit)
 }
 
 // errors

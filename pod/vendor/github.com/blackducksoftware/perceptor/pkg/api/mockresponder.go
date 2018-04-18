@@ -22,23 +22,24 @@ under the License.
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
 
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 )
 
 type MockResponder struct {
-	Pods   map[string]Pod
-	Images map[string]ImageInfo
+	Pods             map[string]Pod
+	Images           map[string]ImageInfo
+	NextImageCounter int
 }
 
 func NewMockResponder() *MockResponder {
 	return &MockResponder{
-		Pods:   map[string]Pod{},
-		Images: map[string]ImageInfo{},
+		Pods:             map[string]Pod{},
+		Images:           map[string]ImageInfo{},
+		NextImageCounter: 0,
 	}
 }
 
@@ -54,13 +55,9 @@ func (mr *MockResponder) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }
 
-func (mr *MockResponder) GetModel() string {
-	jsonBytes, err := json.Marshal(mr)
-	if err != nil {
-		log.Errorf("unable to serialize JSON: %s", err.Error())
-		panic(err)
-	}
-	return string(jsonBytes)
+func (mr *MockResponder) GetModel() Model {
+	// TODO
+	return Model{}
 }
 
 // perceiver
@@ -68,6 +65,11 @@ func (mr *MockResponder) GetModel() string {
 func (mr *MockResponder) AddPod(pod Pod) {
 	log.Infof("add pod: %+v", pod)
 	qualifiedName := fmt.Sprintf("%s/%s", pod.Namespace, pod.Name)
+	_, ok := mr.Pods[qualifiedName]
+	if ok {
+		return
+	}
+
 	mr.Pods[qualifiedName] = pod
 	for _, cont := range pod.Containers {
 		mr.AddImage(cont.Image)
@@ -113,6 +115,11 @@ func (mr *MockResponder) GetScanResults() ScanResults {
 }
 
 func (mr *MockResponder) AddImage(image Image) {
+	_, ok := mr.Images[image.Sha]
+	if ok {
+		return
+	}
+
 	log.Infof("add image: %+v", image)
 	policyViolations := rand.Intn(3)
 	vulnerabilities := rand.Intn(3)
@@ -149,12 +156,18 @@ func (mr *MockResponder) UpdateAllImages(allImages AllImages) {
 // scanner
 
 func (mr *MockResponder) GetNextImage() NextImage {
-	// TODO
-	return NextImage{}
+	mr.NextImageCounter++
+	imageSpec := ImageSpec{
+		HubProjectName:        fmt.Sprintf("mock-perceptor-%d", mr.NextImageCounter),
+		HubProjectVersionName: fmt.Sprintf("mock-perceptor-project-version-%d", mr.NextImageCounter),
+		HubScanName:           fmt.Sprintf("mock-perceptor-scan-name-%d", mr.NextImageCounter),
+		PullSpec:              "abc/def/ghi",
+		Sha:                   "123abc456def"}
+	return NextImage{ImageSpec: &imageSpec}
 }
 
 func (mr *MockResponder) PostFinishScan(job FinishedScanClientJob) {
-	// TODO
+	log.Infof("finished scan job: %+v", job)
 }
 
 // internal use
