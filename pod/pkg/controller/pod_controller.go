@@ -208,9 +208,8 @@ func (pc *PodController) processPod(key string) error {
 	// the perceptor
 	podInfo, err := mapper.NewPerceptorPodFromKubePod(pod)
 	if err != nil {
-		// In some cases, this may be an error, but most likely, its just a cold start issue w/ perceptor not
-		// seeing that pod yet.
-		return fmt.Errorf("Could not convert pod to perceptor pod: %v.  This pod may not be visible to perceptor yet.", err)
+		// This may or may not be a real error, but log anyway
+		return fmt.Errorf("Could not convert pod to perceptor pod: %v.  This pod will not be sent for processing", err)
 	}
 	err = communicator.SendPerceptorAddEvent(pc.podURL, podInfo)
 	if err != nil {
