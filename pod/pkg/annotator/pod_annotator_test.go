@@ -49,12 +49,36 @@ var scannedImages = []perceptorapi.ScannedImage{
 		ComponentsURL:    "http://url.com",
 	},
 	{
-		Name:             "image2",
+		Name:             "this.name.includes.registry.name/imagenameis/short/butthefulllengthwithregistryistoolong",
 		Sha:              "HAFGW2392FJGNE3FFK04",
 		PolicyViolations: 5,
 		Vulnerabilities:  15,
 		OverallStatus:    "STATUS4",
-		ComponentsURL:    "http://new.com/location",
+		ComponentsURL:    "http://new.com",
+	},
+	{
+		Name:             "this.name.includes.registry.name/and/many/directories/and/is/way/too/long/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Sha:              "HAFGW2392FJGNE3FFK04",
+		PolicyViolations: 0,
+		Vulnerabilities:  0,
+		OverallStatus:    "STATUS5",
+		ComponentsURL:    "http://thisurlisreallylongtoo.com/andwouldfailthe63characterlimit/butshouldntbeneeded",
+	},
+	{
+		Name:             "this/name/and/many/directories/and/is/way/too/long/tofitin/the63character/limitofalabel",
+		Sha:              "HAFGW2392FJGNE3FFK04",
+		PolicyViolations: 1,
+		Vulnerabilities:  40,
+		OverallStatus:    "STATUS6",
+		ComponentsURL:    "http://thisurlisreallylongtoo.com/andwouldfailthe63characterlimit/butshouldntbeneeded",
+	},
+	{
+		Name:             "registry:port/imagenameis/short/butthefulllengthwithregistryistoolong",
+		Sha:              "HAFGW2392FJGNE3FFK04",
+		PolicyViolations: 10,
+		Vulnerabilities:  1,
+		OverallStatus:    "STATUS7",
+		ComponentsURL:    "http://registry.com",
 	},
 }
 
@@ -76,24 +100,24 @@ var scannedPods = []perceptorapi.ScannedPod{
 }
 
 var results = perceptorapi.ScanResults{
-	HubScanClientVersion: "version.1",
-	HubVersion:           "version.2",
+	HubScanClientVersion: "hub.scan.version",
+	HubVersion:           "hub.version",
 	Pods:                 scannedPods,
 	Images:               scannedImages,
 }
 
-var podAnnotations = map[string]string{"podannotationkey1": "podvalue1", "podannotationkey2": "podvalue2", "podannotationkey3": "podvalue3"}
-var podLabels = map[string]string{"podlabelkey1": "podvalue1", "podlabelkey2": "podvalue2", "podlabelkey3": "podvalue3"}
-var imageAnnotations = map[string]string{"imageannotationkey1": "imagevalue1", "imageannotationkey2": "imagevalue2", "imageannotationkey3": "imagevalue3"}
-var imageLabels = map[string]string{"imagelabelkey1": "imagevalue1", "imagelabelkey2": "imagevalue2", "imagelabelkey3": "imagevalue3"}
+func makeImageAnnotationObj(pos int) *annotations.ImageAnnotationData {
+	image := scannedImages[pos]
+	return annotations.NewImageAnnotationData(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL, results.HubVersion, results.HubScanClientVersion)
+}
 
-func makePodAnnotationObj() *annotations.PodAnnotationData {
-	pod := scannedPods[0]
+func makePodAnnotationObj(pos int) *annotations.PodAnnotationData {
+	pod := scannedPods[pos%len(scannedPods)]
 	return annotations.NewPodAnnotationData(pod.PolicyViolations, pod.Vulnerabilities, pod.OverallStatus, results.HubVersion, results.HubScanClientVersion)
 }
 
-func makePodWithImage(name string, sha string) *v1.Pod {
-	scannedPod := scannedPods[0]
+func makePodWithImage(pos int, name string, sha string) *v1.Pod {
+	scannedPod := scannedPods[pos%len(scannedPods)]
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      scannedPod.Name,
@@ -110,34 +134,18 @@ func makePodWithImage(name string, sha string) *v1.Pod {
 	}
 }
 
-func makePod() *v1.Pod {
-	scannedImage := scannedImages[0]
-	return makePodWithImage(scannedImage.Name, scannedImage.Sha)
-}
-
-func imageLabelGenerator(obj interface{}, name string, count int) map[string]string {
-	return imageLabels
-}
-
-func imageAnnotationGenerator(obj interface{}, name string, count int) map[string]string {
-	return imageAnnotations
-}
-
-func podLabelGenerator(obj interface{}) map[string]string {
-	return podLabels
-}
-
-func podAnnotationGenerator(obj interface{}) map[string]string {
-	return podAnnotations
+func makePod(pos int) *v1.Pod {
+	scannedImage := scannedImages[pos]
+	return makePodWithImage(pos, scannedImage.Name, scannedImage.Sha)
 }
 
 func createPA() *PodAnnotator {
 	return &PodAnnotator{h: annotations.PodAnnotatorHandlerFuncs{
-		PodLabelCreationFunc:      podLabelGenerator,
-		PodAnnotationCreationFunc: podAnnotationGenerator,
+		PodLabelCreationFunc:      annotations.CreatePodLabels,
+		PodAnnotationCreationFunc: annotations.CreatePodAnnotations,
 		ImageAnnotatorHandlerFuncs: annotations.ImageAnnotatorHandlerFuncs{
-			ImageLabelCreationFunc:      imageLabelGenerator,
-			ImageAnnotationCreationFunc: imageAnnotationGenerator,
+			ImageLabelCreationFunc:      annotations.CreateImageLabels,
+			ImageAnnotationCreationFunc: annotations.CreateImageAnnotations,
 			MapCompareHandlerFuncs: annotations.MapCompareHandlerFuncs{
 				MapCompareFunc: annotations.StringMapContains,
 			},
@@ -208,20 +216,32 @@ func TestGetScanResults(t *testing.T) {
 }
 
 func TestAddPodAnnotations(t *testing.T) {
-	partialPodAnnotationSet := func() map[string]string {
+	podAnnotationSet := func(pos int) map[string]string {
+		return annotations.CreatePodAnnotations(makePodAnnotationObj(pos))
+	}
+
+	imageAnnotationSet := func(pos int) map[string]string {
+		return annotations.CreateImageAnnotations(makeImageAnnotationObj(pos), scannedImages[pos].Name, 0)
+	}
+
+	fullAnnotationSet := func(pos int) map[string]string {
+		return utils.MapMerge(podAnnotationSet(pos), imageAnnotationSet(pos))
+	}
+
+	partialPodAnnotationSet := func(pos int) map[string]string {
 		annotations := make(map[string]string)
-		for k, v := range podAnnotations {
-			if !strings.Contains(k, "podannotationkey2") {
+		for k, v := range podAnnotationSet(pos) {
+			if !strings.Contains(k, "scanner-version") {
 				annotations[k] = v
 			}
 		}
 		return annotations
 	}
 
-	partialImageAnnotationSet := func() map[string]string {
+	partialImageAnnotationSet := func(pos int) map[string]string {
 		annotations := make(map[string]string)
-		for k, v := range imageAnnotations {
-			if !strings.Contains(k, "imageannotationkey2") {
+		for k, v := range imageAnnotationSet(pos) {
+			if !strings.Contains(k, "project-endpoint") {
 				annotations[k] = v
 			}
 		}
@@ -233,63 +253,71 @@ func TestAddPodAnnotations(t *testing.T) {
 	testcases := []struct {
 		description         string
 		pod                 *v1.Pod
+		position            int
 		existingAnnotations map[string]string
 		expectedAnnotations map[string]string
 		shouldAdd           bool
 	}{
 		{
 			description:         "pod with no annotations",
-			pod:                 makePod(),
+			pod:                 makePod(0),
+			position:            0,
 			existingAnnotations: make(map[string]string),
-			expectedAnnotations: utils.MapMerge(podAnnotations, imageAnnotations),
+			expectedAnnotations: fullAnnotationSet(0),
 			shouldAdd:           true,
 		},
 		{
 			description:         "pod with existing annotations, no overlap",
-			pod:                 makePod(),
+			pod:                 makePod(0),
+			position:            0,
 			existingAnnotations: otherAnnotations,
-			expectedAnnotations: utils.MapMerge(otherAnnotations, utils.MapMerge(podAnnotations, imageAnnotations)),
+			expectedAnnotations: utils.MapMerge(otherAnnotations, fullAnnotationSet(0)),
 			shouldAdd:           true,
 		},
 		{
 			description:         "pod with existing annotations, some pod overlap",
-			pod:                 makePod(),
-			existingAnnotations: partialPodAnnotationSet(),
-			expectedAnnotations: utils.MapMerge(podAnnotations, imageAnnotations),
+			pod:                 makePod(0),
+			position:            0,
+			existingAnnotations: partialPodAnnotationSet(0),
+			expectedAnnotations: fullAnnotationSet(0),
 			shouldAdd:           true,
 		},
 		{
 			description:         "pod with existing annotations, some image overlap",
-			pod:                 makePod(),
-			existingAnnotations: partialImageAnnotationSet(),
-			expectedAnnotations: utils.MapMerge(podAnnotations, imageAnnotations),
+			pod:                 makePod(0),
+			position:            0,
+			existingAnnotations: partialImageAnnotationSet(0),
+			expectedAnnotations: fullAnnotationSet(0),
 			shouldAdd:           true,
 		},
 		{
 			description:         "pod with exact existing annotations",
-			pod:                 makePod(),
-			existingAnnotations: utils.MapMerge(podAnnotations, imageAnnotations),
-			expectedAnnotations: utils.MapMerge(podAnnotations, imageAnnotations),
+			pod:                 makePod(0),
+			position:            0,
+			existingAnnotations: fullAnnotationSet(0),
+			expectedAnnotations: fullAnnotationSet(0),
 			shouldAdd:           false,
 		},
 		{
 			description:         "pod with image that hasn't been scanned",
-			pod:                 makePodWithImage("imageName", "234F8sdgj235jsdf923"),
+			pod:                 makePodWithImage(0, "imageName", "234F8sdgj235jsdf923"),
+			position:            0,
 			existingAnnotations: make(map[string]string),
-			expectedAnnotations: podAnnotations,
+			expectedAnnotations: podAnnotationSet(0),
 			shouldAdd:           true,
 		},
 		{
 			description:         "pod with image that hasn't been scanned, existing pod annotations",
-			pod:                 makePodWithImage("imageName", "234F8sdgj235jsdf923"),
-			existingAnnotations: podAnnotations,
-			expectedAnnotations: podAnnotations,
+			pod:                 makePodWithImage(0, "imageName", "234F8sdgj235jsdf923"),
+			position:            0,
+			existingAnnotations: podAnnotationSet(0),
+			expectedAnnotations: podAnnotationSet(0),
 			shouldAdd:           false,
 		},
 	}
 
 	for _, tc := range testcases {
-		annotationObj := makePodAnnotationObj()
+		annotationObj := makePodAnnotationObj(tc.position)
 		tc.pod.SetAnnotations(tc.existingAnnotations)
 		result := createPA().addPodAnnotations(tc.pod, annotationObj, scannedImages)
 		if result != tc.shouldAdd {
@@ -307,20 +335,32 @@ func TestAddPodAnnotations(t *testing.T) {
 }
 
 func TestAddPodLabels(t *testing.T) {
-	partialPodLabelSet := func() map[string]string {
+	podLabelSet := func(pos int) map[string]string {
+		return annotations.CreatePodLabels(makePodAnnotationObj(pos))
+	}
+
+	imageLabelSet := func(pos int) map[string]string {
+		return annotations.CreateImageLabels(makeImageAnnotationObj(pos), scannedImages[pos].Name, 0)
+	}
+
+	fullLabelSet := func(pos int) map[string]string {
+		return utils.MapMerge(podLabelSet(pos), imageLabelSet(pos))
+	}
+
+	partialPodLabelSet := func(pos int) map[string]string {
 		labels := make(map[string]string)
-		for k, v := range podLabels {
-			if !strings.Contains(k, "podlabelkey2") {
+		for k, v := range podLabelSet(pos) {
+			if !strings.Contains(k, "policy-violations") {
 				labels[k] = v
 			}
 		}
 		return labels
 	}
 
-	partialImageLabelSet := func() map[string]string {
+	partialImageLabelSet := func(pos int) map[string]string {
 		labels := make(map[string]string)
-		for k, v := range imageLabels {
-			if !strings.Contains(k, "imagelabelkey2") {
+		for k, v := range imageLabelSet(pos) {
+			if !strings.Contains(k, "vulnerabilities") {
 				labels[k] = v
 			}
 		}
@@ -332,63 +372,103 @@ func TestAddPodLabels(t *testing.T) {
 	testcases := []struct {
 		description    string
 		pod            *v1.Pod
+		position       int
 		existingLabels map[string]string
 		expectedLabels map[string]string
 		shouldAdd      bool
 	}{
 		{
 			description:    "pod with no labels",
-			pod:            makePod(),
+			pod:            makePod(0),
+			position:       0,
 			existingLabels: make(map[string]string),
-			expectedLabels: utils.MapMerge(podLabels, imageLabels),
+			expectedLabels: fullLabelSet(0),
 			shouldAdd:      true,
 		},
 		{
 			description:    "pod with existing labels, no overlap",
-			pod:            makePod(),
+			pod:            makePod(0),
+			position:       0,
 			existingLabels: otherLabels,
-			expectedLabels: utils.MapMerge(otherLabels, utils.MapMerge(podLabels, imageLabels)),
+			expectedLabels: utils.MapMerge(otherLabels, fullLabelSet(0)),
 			shouldAdd:      true,
 		},
 		{
 			description:    "pod with existing labels, some pod overlap",
-			pod:            makePod(),
-			existingLabels: partialPodLabelSet(),
-			expectedLabels: utils.MapMerge(partialPodLabelSet(), imageLabels),
+			pod:            makePod(0),
+			position:       0,
+			existingLabels: partialPodLabelSet(0),
+			expectedLabels: fullLabelSet(0),
 			shouldAdd:      true,
 		},
 		{
 			description:    "pod with existing labels, some image overlap",
-			pod:            makePod(),
-			existingLabels: partialImageLabelSet(),
-			expectedLabels: utils.MapMerge(podLabels, partialImageLabelSet()),
+			pod:            makePod(0),
+			position:       0,
+			existingLabels: partialImageLabelSet(0),
+			expectedLabels: fullLabelSet(0),
 			shouldAdd:      true,
 		},
 		{
 			description:    "pod with exact existing labels",
-			pod:            makePod(),
-			existingLabels: utils.MapMerge(podLabels, imageLabels),
-			expectedLabels: utils.MapMerge(podLabels, imageLabels),
+			pod:            makePod(0),
+			position:       0,
+			existingLabels: fullLabelSet(0),
+			expectedLabels: fullLabelSet(0),
 			shouldAdd:      false,
 		},
 		{
 			description:    "pod with no scanned images",
-			pod:            makePodWithImage("imageName", "234F8sdgj235jsdf923"),
+			pod:            makePodWithImage(0, "imageName", "234F8sdgj235jsdf923"),
+			position:       0,
 			existingLabels: make(map[string]string),
-			expectedLabels: podLabels,
+			expectedLabels: podLabelSet(0),
 			shouldAdd:      true,
 		},
 		{
 			description:    "pod with no scanned images, existing pod labels",
-			pod:            makePodWithImage("imageName", "234F8sdgj235jsdf923"),
-			existingLabels: podLabels,
-			expectedLabels: podLabels,
+			pod:            makePodWithImage(0, "imageName", "234F8sdgj235jsdf923"),
+			position:       0,
+			existingLabels: podLabelSet(0),
+			expectedLabels: podLabelSet(0),
 			shouldAdd:      false,
+		},
+		{
+			description:    "pod with an image that has a registry in the name, but name is under 63 characters",
+			pod:            makePod(1),
+			position:       1,
+			existingLabels: make(map[string]string),
+			expectedLabels: fullLabelSet(1),
+			shouldAdd:      true,
+		},
+		{
+			description:    "pod with an image that has a registry in the name, but name is longer than 63 characters",
+			pod:            makePod(2),
+			position:       2,
+			existingLabels: make(map[string]string),
+			expectedLabels: fullLabelSet(2),
+			shouldAdd:      true,
+		},
+		{
+			description:    "pod with an image that has a name that is longer than 63 characters",
+			pod:            makePod(3),
+			position:       3,
+			existingLabels: make(map[string]string),
+			expectedLabels: fullLabelSet(3),
+			shouldAdd:      true,
+		},
+		{
+			description:    "pod with an image that has a registry with a port in the name",
+			pod:            makePod(4),
+			position:       4,
+			existingLabels: make(map[string]string),
+			expectedLabels: fullLabelSet(4),
+			shouldAdd:      true,
 		},
 	}
 
 	for _, tc := range testcases {
-		annotationObj := makePodAnnotationObj()
+		annotationObj := makePodAnnotationObj(tc.position)
 		tc.pod.SetLabels(tc.existingLabels)
 		result := createPA().addPodLabels(tc.pod, annotationObj, scannedImages)
 		if result != tc.shouldAdd {
@@ -400,6 +480,19 @@ func TestAddPodLabels(t *testing.T) {
 				t.Errorf("[%s] key %s doesn't exist in pod labels %v", tc.description, k, updated)
 			} else if val != v {
 				t.Errorf("[%s] key %s has wrong value in pod label.  Expected %s got %s", tc.description, k, tc.expectedLabels[k], updated[k])
+			}
+			if len(k) > 63 {
+				t.Errorf("[%s] key %s is longer than 63 characters", tc.description, k)
+			}
+			if len(updated[k]) > 63 {
+				t.Errorf("[%s] key %s has value %s, which is longer than 63 characters", tc.description, k, updated[k])
+			}
+		}
+		newName := annotations.RemoveRegistryInfo(scannedImages[tc.position].Name)
+		if len(newName) > 63 {
+			shortName := newName[0:63]
+			if strings.Compare(shortName, updated["image0"]) != 0 {
+				t.Errorf("[%s] truncated value %s is wrong, expected %s", tc.description, updated["image0"], shortName)
 			}
 		}
 	}
@@ -427,13 +520,13 @@ func TestGetPodContainerMap(t *testing.T) {
 	}{
 		{
 			description:      "all containers scanned",
-			pod:              makePod(),
+			pod:              makePod(0),
 			additionalImages: make([]v1.ContainerStatus, 0),
 			resultMap:        map[string]string{"key0": scannedImages[0].Name + "0"},
 		},
 		{
 			description:      "one container scanned, one not scanned",
-			pod:              makePod(),
+			pod:              makePod(0),
 			additionalImages: []v1.ContainerStatus{imageWithPrefix},
 			resultMap:        map[string]string{"key0": scannedImages[0].Name + "0"},
 		},
