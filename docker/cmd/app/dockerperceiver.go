@@ -84,8 +84,8 @@ func NewDockerPerceiver(handler annotations.PodAnnotatorHandler, configPath stri
 
 // Run starts the PodPerceiver watching and annotating pods
 func (pp *DockerPerceiver) Run(stopCh <-chan struct{}) {
-	log.Infof("starting pod controllers")
-	go pp.dockerController.Run(5, stopCh)
+	log.Infof("starting Docker controllers")
+	// go pp.dockerController.Run(5, stopCh)
 	go pp.dockerAnnotator.Run(pp.annotationInterval, stopCh)
 	go pp.dockerDumper.Run(pp.dumpInterval, stopCh)
 
