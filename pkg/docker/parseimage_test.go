@@ -31,6 +31,7 @@ func TestParseImageIDString(t *testing.T) {
 		description string
 		prefix      string
 		name        string
+		tag         string
 		shaPrefix   string
 		sha         string
 		shouldPass  bool
@@ -39,6 +40,7 @@ func TestParseImageIDString(t *testing.T) {
 			description: "valid format",
 			prefix:      "docker-pullable://",
 			name:        "abc",
+			tag:         "",
 			shaPrefix:   "@",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  true,
@@ -47,6 +49,7 @@ func TestParseImageIDString(t *testing.T) {
 			description: "valid format with 2 directories",
 			prefix:      "docker-pullable://",
 			name:        "abc/def",
+			tag:         "",
 			shaPrefix:   "@",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  true,
@@ -55,6 +58,7 @@ func TestParseImageIDString(t *testing.T) {
 			description: "valid format with private registry",
 			prefix:      "docker-pullable://",
 			name:        "docker-registry.default.svc:5000/def/ghi",
+			tag:         "",
 			shaPrefix:   "@",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  true,
@@ -63,6 +67,7 @@ func TestParseImageIDString(t *testing.T) {
 			description: "missing prefix",
 			prefix:      "",
 			name:        "abc/def",
+			tag:         "",
 			shaPrefix:   "@",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  true,
@@ -71,6 +76,7 @@ func TestParseImageIDString(t *testing.T) {
 			description: "missing image name",
 			prefix:      "docker-pullable://",
 			name:        "",
+			tag:         "",
 			shaPrefix:   "@",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  false,
@@ -79,6 +85,7 @@ func TestParseImageIDString(t *testing.T) {
 			description: "missing sha",
 			prefix:      "docker-pullable://",
 			name:        "abc/def",
+			tag:         "",
 			shaPrefix:   "@",
 			sha:         "",
 			shouldPass:  false,
@@ -87,14 +94,24 @@ func TestParseImageIDString(t *testing.T) {
 			description: "Docker prefix",
 			prefix:      "docker://",
 			name:        "",
+			tag:         "",
 			shaPrefix:   "",
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  false,
 		},
+		{
+			description: "Swarm prefix",
+			prefix:      "",
+			name:        "abc/def",
+			tag:         ":1.0",
+			shaPrefix:   "@",
+			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
+			shouldPass:  true,
+		},
 	}
 
 	for _, tc := range testcases {
-		imageID := fmt.Sprintf("%s%s%ssha256:%s", tc.prefix, tc.name, tc.shaPrefix, tc.sha)
+		imageID := fmt.Sprintf("%s%s%s%ssha256:%s", tc.prefix, tc.name, tc.tag, tc.shaPrefix, tc.sha)
 		name, sha, err := ParseImageIDString(imageID)
 		//fmt.Printf("Test: %s, err: %s, imageID: %s, name: %s, sha: %s \n", tc.description, err, imageID, name, sha)
 		if err != nil && tc.shouldPass {

@@ -31,6 +31,7 @@ var dockerPullableRegexp = regexp.MustCompile("^docker-pullable://(.+)@sha256:([
 
 //var dockerRegexp = regexp.MustCompile("^docker://sha256:([a-zA-Z0-9]+)$")
 var imageRegexp = regexp.MustCompile("^(.+)@sha256:([a-zA-Z0-9]+)$")
+var swarmImageRegexp = regexp.MustCompile("^(.+):(.+)@sha256:([a-zA-Z0-9]+)$")
 
 // ParseImageIDString parses an ImageID that can pull an image from docker
 // Example image id:
@@ -43,7 +44,12 @@ func ParseImageIDString(imageID string) (string, string, error) {
 	if strings.HasPrefix(imageID, "docker://") {
 		return "", "", fmt.Errorf("scanning of unscheduled images (%s) is not supported, ", imageID)
 	}
-	return parseImageString(imageID)
+	image, digest, err := parseDockerSwarmImageString(imageID)
+	if err != nil {
+		return parseImageString(imageID)
+	} else {
+		return image, digest, err
+	}
 }
 
 func parseImageString(imageID string) (string, string, error) {
@@ -72,5 +78,15 @@ func parseDockerPullableImageString(imageID string) (string, string, error) {
 	}
 	name := match[1]
 	digest := match[2]
+	return name, digest, nil
+}
+
+func parseDockerSwarmImageString(image string) (string, string, error) {
+	match := swarmImageRegexp.FindStringSubmatch(image)
+	if len(match) != 4 {
+		return "", "", fmt.Errorf("unable to match swarmImageRegexp regex <%s> to input <%s>", swarmImageRegexp.String(), image)
+	}
+	name := match[1]
+	digest := match[3]
 	return name, digest, nil
 }

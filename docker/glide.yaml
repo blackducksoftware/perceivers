@@ -1,0 +1,32 @@
+package: github.com/blackducksoftware/perceivers/docker
+import:
+- package: github.com/blackducksoftware/perceptor
+  version: 1.0.0
+  subpackages:
+  - pkg/api
+- package: github.com/sirupsen/logrus
+- package: k8s.io/api
+  subpackages:
+  - core/v1
+- package: k8s.io/apimachinery
+  version: kubernetes-1.10.0
+  subpackages:
+  - pkg/apis/meta/v1
+  - pkg/fields
+  - pkg/util/runtime
+  - pkg/util/wait
+- package: k8s.io/client-go
+  version: kubernetes-1.10.0
+  subpackages:
+  - kubernetes
+  - rest
+  - tools/cache
+  - tools/clientcmd
+  - util/workqueue
+- package: github.com/fsouza/go-dockerclient
+  version: 1.2.0
+ignore:
+- github.com/blackducksoftware/perceivers/pkg/annotations
+- github.com/blackducksoftware/perceivers/pkg/communicator
+- github.com/blackducksoftware/perceivers/pkg/utils
+- github.com/blackducksoftware/perceivers/pkg/docker
