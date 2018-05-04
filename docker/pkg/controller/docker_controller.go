@@ -25,16 +25,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blackducksoftware/perceivers/docker/pkg/mapper"
 	"github.com/blackducksoftware/perceivers/docker/pkg/metrics"
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
-	"github.com/blackducksoftware/perceivers/pkg/communicator"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
 	"k8s.io/api/core/v1"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -180,41 +177,41 @@ func (pc *DockerController) processNextWorkItem() bool {
 	return true
 }
 
-func (pc *DockerController) processPod(key string) error {
-	log.Infof("processing pod %s", key)
-
-	ns, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		metrics.RecordError("pod_controller", "error getting name of pod")
-		return fmt.Errorf("error getting name of pod %q to get pod from informer: %v", key, err)
-	}
-
-	// Get the pod
-	getPodStart := time.Now()
-	pod, err := pc.podLister.Pods(ns).Get(name)
-	metrics.RecordDuration("get pod -- pod controller", time.Now().Sub(getPodStart))
-	if errors.IsNotFound(err) {
-		// Pod doesn't exist (anymore), so this is a delete event
-		err = communicator.SendPerceptorDeleteEvent(pc.podURL, name)
-		if err != nil {
-			metrics.RecordError("pod_controller", "error sending pod delete event")
-		}
-		return err
-	} else if err != nil {
-		metrics.RecordError("pod_controller", "error getting pod from informer")
-		return fmt.Errorf("error getting pod %s from informer: %v", name, err)
-	}
-
-	// Convert the pod from kubernetes to perceptor format and send to
-	// the perceptor
-	podInfo, err := mapper.NewPerceptorPodFromKubePod(pod)
-	if err != nil {
-		// This may or may not be a real error, but log anyway
-		return fmt.Errorf("Could not convert pod to perceptor pod: %v.  This pod will not be sent for processing", err)
-	}
-	err = communicator.SendPerceptorAddEvent(pc.podURL, podInfo)
-	if err != nil {
-		metrics.RecordError("pod_controller", "error sending pod add event")
-	}
-	return err
-}
+// func (pc *DockerController) processPod(key string) error {
+// 	log.Infof("processing pod %s", key)
+//
+// 	ns, name, err := cache.SplitMetaNamespaceKey(key)
+// 	if err != nil {
+// 		metrics.RecordError("pod_controller", "error getting name of pod")
+// 		return fmt.Errorf("error getting name of pod %q to get pod from informer: %v", key, err)
+// 	}
+//
+// 	// Get the pod
+// 	getPodStart := time.Now()
+// 	pod, err := pc.podLister.Pods(ns).Get(name)
+// 	metrics.RecordDuration("get pod -- pod controller", time.Now().Sub(getPodStart))
+// 	if errors.IsNotFound(err) {
+// 		// Pod doesn't exist (anymore), so this is a delete event
+// 		err = communicator.SendPerceptorDeleteEvent(pc.podURL, name)
+// 		if err != nil {
+// 			metrics.RecordError("pod_controller", "error sending pod delete event")
+// 		}
+// 		return err
+// 	} else if err != nil {
+// 		metrics.RecordError("pod_controller", "error getting pod from informer")
+// 		return fmt.Errorf("error getting pod %s from informer: %v", name, err)
+// 	}
+//
+// 	// Convert the pod from kubernetes to perceptor format and send to
+// 	// the perceptor
+// 	podInfo, err := mapper.NewPerceptorPodFromKubePod(pod)
+// 	if err != nil {
+// 		// This may or may not be a real error, but log anyway
+// 		return fmt.Errorf("Could not convert pod to perceptor pod: %v.  This pod will not be sent for processing", err)
+// 	}
+// 	err = communicator.SendPerceptorAddEvent(pc.podURL, podInfo)
+// 	if err != nil {
+// 		metrics.RecordError("pod_controller", "error sending pod add event")
+// 	}
+// 	return err
+// }
