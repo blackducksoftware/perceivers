@@ -148,7 +148,7 @@ func (sa *DockerAnnotator) addImageLabels(swarmService *swarm.Service, imageAnno
 			metrics.RecordError("swarm_service_annotator", "unable to update annotations/labels for service")
 			log.Errorf("unable to update annotations/labels for service %s: %v", serviceName, err)
 		} else {
-			metrics.RecordPodAnnotation("swarm_service_annotator", serviceName)
+			metrics.RecordSwarmServiceAnnotation("swarm_service_annotator", serviceName)
 			log.Infof("successfully labelled service %s", serviceName)
 		}
 	}
