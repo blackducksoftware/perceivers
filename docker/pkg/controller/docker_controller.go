@@ -61,10 +61,9 @@ type DockerController struct {
 }
 
 // NewDockerController creates a new DockerController object
-func NewDockerController(dockerCli *dockerClient.Docker, kubeClient kubernetes.Interface, perceptorURL string, handler annotations.ImageAnnotatorHandler) *DockerController {
+func NewDockerController(dockerCli *dockerClient.Docker, perceptorURL string, handler annotations.ImageAnnotatorHandler) *DockerController {
 	pc := DockerController{
 		cli:    dockerCli,
-		client: kubeClient,
 		queue:  workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Pods"),
 		podURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.PodPath),
 		h:      handler,

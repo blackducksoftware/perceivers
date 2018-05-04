@@ -47,10 +47,9 @@ type DockerDumper struct {
 }
 
 // NewDockerDumper creates a new DockerDumper object
-func NewDockerDumper(client *dockerClient.Docker, core corev1.CoreV1Interface, perceptorURL string) *DockerDumper {
+func NewDockerDumper(client *dockerClient.Docker, perceptorURL string) *DockerDumper {
 	return &DockerDumper{
 		cli:        client,
-		coreV1:     core,
 		allPodsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.AllPodsPath),
 	}
 }

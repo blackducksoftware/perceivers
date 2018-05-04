@@ -33,9 +33,6 @@ import (
 	"github.com/blackducksoftware/perceivers/docker/pkg/dumper"
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -61,20 +58,10 @@ func NewDockerPerceiver(handler annotations.PodAnnotatorHandler, configPath stri
 		panic(fmt.Errorf("failed to read config: %v", err))
 	}
 
-	cli, err := docker.NewDocker()
+	client, err := docker.NewDocker()
 
 	if err != nil {
 		return nil, fmt.Errorf("unable to create Docker client: %v", err)
-	}
-
-	// Create a kube client from in cluster configuration
-	clusterConfig, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, fmt.Errorf("unable to build config from cluster: %v", err)
-	}
-	clientset, err := kubernetes.NewForConfig(clusterConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create kubernetes client: %v", err)
 	}
 
 	// Configure prometheus for metrics
@@ -84,10 +71,10 @@ func NewDockerPerceiver(handler annotations.PodAnnotatorHandler, configPath stri
 
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.PerceptorHost, config.PerceptorPort)
 	p := DockerPerceiver{
-		dockerController:   controller.NewDockerController(cli, clientset, perceptorURL, handler),
-		dockerAnnotator:    annotator.NewDockerAnnotator(cli, perceptorURL, handler),
+		dockerController:   controller.NewDockerController(client, perceptorURL, handler),
+		dockerAnnotator:    annotator.NewDockerAnnotator(client, perceptorURL, handler),
 		annotationInterval: time.Second * time.Duration(config.AnnotationIntervalSeconds),
-		dockerDumper:       dumper.NewDockerDumper(cli, clientset.CoreV1(), perceptorURL),
+		dockerDumper:       dumper.NewDockerDumper(client, perceptorURL),
 		dumpInterval:       time.Minute * time.Duration(config.DumpIntervalMinutes),
 		metricsURL:         fmt.Sprintf(":%d", config.Port),
 	}
