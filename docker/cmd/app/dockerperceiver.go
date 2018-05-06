@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/perceivers/docker/pkg/annotator"
-	"github.com/blackducksoftware/perceivers/docker/pkg/controller"
 	"github.com/blackducksoftware/perceivers/docker/pkg/docker"
 	"github.com/blackducksoftware/perceivers/docker/pkg/dumper"
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
@@ -40,8 +39,6 @@ import (
 
 // PodPerceiver handles watching and annotating pods
 type DockerPerceiver struct {
-	dockerController *controller.DockerController
-
 	dockerAnnotator    *annotator.DockerAnnotator
 	annotationInterval time.Duration
 
@@ -71,7 +68,7 @@ func NewDockerPerceiver(handler annotations.PodAnnotatorHandler, configPath stri
 
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.PerceptorHost, config.PerceptorPort)
 	p := DockerPerceiver{
-		dockerController:   controller.NewDockerController(client, perceptorURL, handler),
+		//dockerController:   controller.NewDockerController(client, perceptorURL, handler),
 		dockerAnnotator:    annotator.NewDockerAnnotator(client, perceptorURL, handler),
 		annotationInterval: time.Second * time.Duration(config.AnnotationIntervalSeconds),
 		dockerDumper:       dumper.NewDockerDumper(client, perceptorURL),
