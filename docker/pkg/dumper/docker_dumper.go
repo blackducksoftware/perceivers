@@ -41,7 +41,7 @@ import (
 
 // DockerDumper handles sending all pods to the perceptor periodically
 type DockerDumper struct {
-	cli        *dockerClient.Docker
+	client     *dockerClient.Docker
 	coreV1     corev1.CoreV1Interface
 	allPodsURL string
 }
@@ -49,7 +49,7 @@ type DockerDumper struct {
 // NewDockerDumper creates a new DockerDumper object
 func NewDockerDumper(client *dockerClient.Docker, perceptorURL string) *DockerDumper {
 	return &DockerDumper{
-		cli:        client,
+		client:     client,
 		allPodsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.AllPodsPath),
 	}
 }
@@ -98,9 +98,9 @@ func (pd *DockerDumper) Run(interval time.Duration, stopCh <-chan struct{}) {
 func (pd *DockerDumper) getAllServicesAsPerceptorPods() ([]perceptorapi.Pod, error) {
 	perceptorPods := []perceptorapi.Pod{}
 
-	// Get all pods from kubernetes
+	// Get all services from swarm cluster
 	getServicesStart := time.Now()
-	swarmServices, err := pd.cli.ListServices()
+	swarmServices, err := pd.client.ListServices()
 	metrics.RecordDuration("get swarm services", time.Now().Sub(getServicesStart))
 	if err != nil {
 		return nil, err

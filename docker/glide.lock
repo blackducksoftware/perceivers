@@ -1,5 +1,5 @@
-hash: 182f1dda2a1179202a1e8cec115321ca9bea7e5517c1bc2787a1c90fd6155f51
-updated: 2018-05-03T18:56:42.387403-04:00
+hash: 1c6abf9ffa5ea54fa98bddcb1ab44d236865d4f288e0dd71cc2e38d5c64b19a2
+updated: 2018-05-06T19:30:24.984252-04:00
 imports:
 - name: github.com/Azure/go-ansiterm
   version: d6e3b3328b783f23731bc4d058875b0371ff8109
@@ -25,12 +25,10 @@ imports:
   version: c6cef34830231743494fe2969284df7b82cc0ad0
   subpackages:
   - pathdriver
-- name: github.com/davecgh/go-spew
-  version: 782f4967f2dc4564575ca782fe2d04090b5faca8
-  subpackages:
-  - spew
 - name: github.com/docker/docker
-  version: 185ae7eedcb61d7926365e7d64504d6480855e5d
+  version: 5f395b35bc600edf38fb17b87a9ac1af612c83a2
+  repo: git@github.com:moby/moby.git
+  vcs: git
   subpackages:
   - api/types
   - api/types/blkiodev
@@ -64,7 +62,7 @@ imports:
 - name: github.com/docker/go-units
   version: 47565b4f722fb6ceae66b95f853feed578a4a51c
 - name: github.com/docker/libnetwork
-  version: 371f8ee376865aa80ec7d8fb3bc029efea9a8533
+  version: d5818e7204d3886a246f3ea4ce39fb133067b194
   subpackages:
   - ipamutils
 - name: github.com/fsnotify/fsnotify
@@ -84,22 +82,8 @@ imports:
   version: 1643683e1b54a9e88ad26d98f81400c8c9d9f4f9
   subpackages:
   - proto
-  - ptypes
-  - ptypes/any
-  - ptypes/duration
-  - ptypes/timestamp
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
-- name: github.com/googleapis/gnostic
-  version: 0c5108395e2debce0d731cf0287ddf7242066aba
-  subpackages:
-  - OpenAPIv2
-  - compiler
-  - extensions
-- name: github.com/hashicorp/golang-lru
-  version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
-  subpackages:
-  - simplelru
 - name: github.com/hashicorp/hcl
   version: ef8a98b0bbce4a65b5aa4c368430a80ddc533168
   subpackages:
@@ -246,7 +230,6 @@ imports:
   - pkg/api/errors
   - pkg/api/meta
   - pkg/api/resource
-  - pkg/apis/meta/internalversion
   - pkg/apis/meta/v1
   - pkg/apis/meta/v1/unstructured
   - pkg/apis/meta/v1beta1
@@ -264,9 +247,7 @@ imports:
   - pkg/runtime/serializer/versioning
   - pkg/selection
   - pkg/types
-  - pkg/util/cache
   - pkg/util/clock
-  - pkg/util/diff
   - pkg/util/errors
   - pkg/util/framer
   - pkg/util/intstr
@@ -284,86 +265,23 @@ imports:
 - name: k8s.io/client-go
   version: 23781f4d6632d88e869066eaebb743857aa1ef9b
   subpackages:
-  - discovery
-  - discovery/fake
   - kubernetes
-  - kubernetes/fake
   - kubernetes/scheme
-  - kubernetes/typed/admissionregistration/v1alpha1
-  - kubernetes/typed/admissionregistration/v1alpha1/fake
-  - kubernetes/typed/admissionregistration/v1beta1
-  - kubernetes/typed/admissionregistration/v1beta1/fake
-  - kubernetes/typed/apps/v1
-  - kubernetes/typed/apps/v1/fake
-  - kubernetes/typed/apps/v1beta1
-  - kubernetes/typed/apps/v1beta1/fake
-  - kubernetes/typed/apps/v1beta2
-  - kubernetes/typed/apps/v1beta2/fake
-  - kubernetes/typed/authentication/v1
-  - kubernetes/typed/authentication/v1/fake
-  - kubernetes/typed/authentication/v1beta1
-  - kubernetes/typed/authentication/v1beta1/fake
-  - kubernetes/typed/authorization/v1
-  - kubernetes/typed/authorization/v1/fake
-  - kubernetes/typed/authorization/v1beta1
-  - kubernetes/typed/authorization/v1beta1/fake
-  - kubernetes/typed/autoscaling/v1
-  - kubernetes/typed/autoscaling/v1/fake
-  - kubernetes/typed/autoscaling/v2beta1
-  - kubernetes/typed/autoscaling/v2beta1/fake
-  - kubernetes/typed/batch/v1
-  - kubernetes/typed/batch/v1/fake
-  - kubernetes/typed/batch/v1beta1
-  - kubernetes/typed/batch/v1beta1/fake
-  - kubernetes/typed/batch/v2alpha1
-  - kubernetes/typed/batch/v2alpha1/fake
-  - kubernetes/typed/certificates/v1beta1
-  - kubernetes/typed/certificates/v1beta1/fake
   - kubernetes/typed/core/v1
-  - kubernetes/typed/core/v1/fake
-  - kubernetes/typed/events/v1beta1
-  - kubernetes/typed/events/v1beta1/fake
-  - kubernetes/typed/extensions/v1beta1
-  - kubernetes/typed/extensions/v1beta1/fake
-  - kubernetes/typed/networking/v1
-  - kubernetes/typed/networking/v1/fake
-  - kubernetes/typed/policy/v1beta1
-  - kubernetes/typed/policy/v1beta1/fake
-  - kubernetes/typed/rbac/v1
-  - kubernetes/typed/rbac/v1/fake
-  - kubernetes/typed/rbac/v1alpha1
-  - kubernetes/typed/rbac/v1alpha1/fake
-  - kubernetes/typed/rbac/v1beta1
-  - kubernetes/typed/rbac/v1beta1/fake
-  - kubernetes/typed/scheduling/v1alpha1
-  - kubernetes/typed/scheduling/v1alpha1/fake
-  - kubernetes/typed/settings/v1alpha1
-  - kubernetes/typed/settings/v1alpha1/fake
-  - kubernetes/typed/storage/v1
-  - kubernetes/typed/storage/v1/fake
-  - kubernetes/typed/storage/v1alpha1
-  - kubernetes/typed/storage/v1alpha1/fake
-  - kubernetes/typed/storage/v1beta1
-  - kubernetes/typed/storage/v1beta1/fake
-  - listers/core/v1
   - pkg/apis/clientauthentication
   - pkg/apis/clientauthentication/v1alpha1
   - pkg/version
   - plugin/pkg/client/auth/exec
   - rest
   - rest/watch
-  - testing
   - tools/cache
   - tools/clientcmd
   - tools/clientcmd/api
   - tools/metrics
-  - tools/pager
   - tools/reference
   - transport
-  - util/buffer
   - util/cert
   - util/flowcontrol
   - util/integer
-  - util/retry
   - util/workqueue
 testImports: []

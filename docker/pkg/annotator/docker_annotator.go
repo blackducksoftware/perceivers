@@ -41,7 +41,7 @@ import (
 type DockerAnnotator struct {
 	scanResultsURL string
 	h              annotations.PodAnnotatorHandler
-	cli            *dockerClient.Docker
+	client         *dockerClient.Docker
 }
 
 // NewDockerAnnotator creates a new PodAnnotator object
@@ -49,7 +49,7 @@ func NewDockerAnnotator(client *dockerClient.Docker, perceptorURL string, handle
 	return &DockerAnnotator{
 		scanResultsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ScanResultsPath),
 		h:              handler,
-		cli:            client,
+		client:         client,
 	}
 }
 
@@ -84,7 +84,7 @@ func (sa *DockerAnnotator) annotate() error {
 
 	// Process the scan results and apply annotations/labels to swarm services
 	log.Infof("GET to %s succeeded, about to update annotations on all swarm services", sa.scanResultsURL)
-	sa.addAnnotationsToPods(*scanResults)
+	sa.addAnnotationsToServices(*scanResults)
 	return nil
 }
 
@@ -106,12 +106,12 @@ func (sa *DockerAnnotator) getScanResults() (*perceptorapi.ScanResults, error) {
 	return &results, nil
 }
 
-func (sa *DockerAnnotator) addAnnotationsToPods(results perceptorapi.ScanResults) {
+func (sa *DockerAnnotator) addAnnotationsToServices(results perceptorapi.ScanResults) {
 	for _, service := range results.Pods {
 		serviceId := fmt.Sprintf("%s", service.Name)
 		getServiceStart := time.Now()
 
-		swarmService, err := sa.cli.GetServices(serviceId)
+		swarmService, err := sa.client.GetServices(serviceId)
 		if err != nil {
 			metrics.RecordError("swarm_service_annotator", "unable to get service")
 			log.Errorf("Unable to get %s service because %v \n", serviceId, err)
@@ -142,7 +142,7 @@ func (sa *DockerAnnotator) addImageLabels(swarmService *swarm.Service, imageAnno
 
 	if sa.h.CompareMaps(currentLabels, newLabels) {
 		setLabelsStart := time.Now()
-		err := sa.cli.UpdateServices(swarmService, newLabels)
+		err := sa.client.UpdateServices(swarmService, newLabels)
 		metrics.RecordDuration("update services", time.Now().Sub(setLabelsStart))
 		if err != nil {
 			metrics.RecordError("swarm_service_annotator", "unable to update annotations/labels for service")

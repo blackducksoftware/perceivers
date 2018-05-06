@@ -25,6 +25,10 @@ import:
   - util/workqueue
 - package: github.com/fsouza/go-dockerclient
   version: 1.2.0
+- package: github.com/docker/docker
+  vcs: git
+  version: master
+  repo: git@github.com:moby/moby.git
 ignore:
 - github.com/blackducksoftware/perceivers/pkg/annotations
 - github.com/blackducksoftware/perceivers/pkg/communicator
