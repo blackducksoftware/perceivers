@@ -28,9 +28,11 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/perceivers/docker/pkg/annotator"
-	"github.com/blackducksoftware/perceivers/docker/pkg/docker"
+	"github.com/blackducksoftware/perceivers/docker/pkg/controller"
+	dockerClient "github.com/blackducksoftware/perceivers/docker/pkg/docker"
 	"github.com/blackducksoftware/perceivers/docker/pkg/dumper"
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
+	docker "github.com/fsouza/go-dockerclient"
 
 	log "github.com/sirupsen/logrus"
 
@@ -39,6 +41,7 @@ import (
 
 // PodPerceiver handles watching and annotating pods
 type DockerPerceiver struct {
+	dockerController   *controller.EventHandler
 	dockerAnnotator    *annotator.DockerAnnotator
 	annotationInterval time.Duration
 
@@ -48,6 +51,15 @@ type DockerPerceiver struct {
 	metricsURL string
 }
 
+type Handlers struct {
+	handledEvents chan *docker.APIEvents
+	handlerFunc   func(event *docker.APIEvents) error
+}
+
+func (th *Handlers) Handle(event *docker.APIEvents) error {
+	return th.handlerFunc(event)
+}
+
 // NewPodPerceiver creates a new PodPerceiver object
 func NewDockerPerceiver(handler annotations.PodAnnotatorHandler, configPath string) (*DockerPerceiver, error) {
 	config, err := GetDockerPerceiverConfig(configPath)
@@ -55,11 +67,18 @@ func NewDockerPerceiver(handler annotations.PodAnnotatorHandler, configPath stri
 		panic(fmt.Errorf("failed to read config: %v", err))
 	}
 
-	client, err := docker.NewDocker()
+	client, err := dockerClient.NewDocker()
 
-	if err != nil {
-		return nil, fmt.Errorf("unable to create Docker client: %v", err)
+	handledEvents := make(chan *docker.APIEvents, 10)
+	hFn := func(event *docker.APIEvents) error {
+		handledEvents <- event
+		return nil
 	}
+
+	eventHandler := &Handlers{
+		handlerFunc: hFn,
+	}
+	eventHandlers := map[string][]controller.Handler{"create": {eventHandler}}
 
 	// Configure prometheus for metrics
 	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
@@ -68,7 +87,7 @@ func NewDockerPerceiver(handler annotations.PodAnnotatorHandler, configPath stri
 
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.PerceptorHost, config.PerceptorPort)
 	p := DockerPerceiver{
-		//dockerController:   controller.NewDockerController(client, perceptorURL, handler),
+		dockerController:   controller.NewEventHandler(10, 10, client, eventHandlers, perceptorURL),
 		dockerAnnotator:    annotator.NewDockerAnnotator(client, perceptorURL, handler),
 		annotationInterval: time.Second * time.Duration(config.AnnotationIntervalSeconds),
 		dockerDumper:       dumper.NewDockerDumper(client, perceptorURL),
@@ -82,7 +101,7 @@ func NewDockerPerceiver(handler annotations.PodAnnotatorHandler, configPath stri
 // Run starts the PodPerceiver watching and annotating pods
 func (pp *DockerPerceiver) Run(stopCh <-chan struct{}) {
 	log.Infof("starting Docker controllers")
-	// go pp.dockerController.Run(5, stopCh)
+	go pp.dockerController.Run()
 	go pp.dockerAnnotator.Run(pp.annotationInterval, stopCh)
 	go pp.dockerDumper.Run(pp.dumpInterval, stopCh)
 

@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/fsouza/go-dockerclient"
+	dockerClient "github.com/blackducksoftware/perceivers/docker/pkg/docker"
+	docker "github.com/fsouza/go-dockerclient"
 )
 
-type testHandler struct {
+type Handlers struct {
 	handledEvents chan *docker.APIEvents
-	t             *testing.T
 	handlerFunc   func(event *docker.APIEvents) error
 }
 
-func (th *testHandler) Handle(event *docker.APIEvents) error {
+func (th *Handlers) Handle(event *docker.APIEvents) error {
 	return th.handlerFunc(event)
 }
 
@@ -24,20 +24,17 @@ func TestEventHandler(t *testing.T) {
 		return nil
 	}
 
-	handler := &testHandler{
+	handler := &Handlers{
 		handlerFunc: hFn,
 	}
 	handlers := map[string][]Handler{"create": {handler}}
 
-	endpoint := "unix:///var/run/docker.sock"
-	dockerClient, err := docker.NewVersionedClient(endpoint, "1.24")
+	dockerClient, err := dockerClient.NewDocker()
+
 	if err != nil {
-		fmt.Printf("Unable to get the Docker client because %v", err)
+		fmt.Errorf("Unable to initiate the Docker client because %v", err)
 	}
 
-	//dockerClient, _ := docker.NewClientFromEnv()
-	router, _ := NewEventHandler(10, 10, dockerClient, handlers)
-
-	defer router.Stop()
-	router.Start()
+	eventHandler := NewEventHandler(10, 10, dockerClient, handlers, "")
+	eventHandler.Run()
 }

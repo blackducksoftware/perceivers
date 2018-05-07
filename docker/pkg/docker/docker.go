@@ -7,12 +7,12 @@ import (
 )
 
 type Docker struct {
-	client *dockerClient.Client
+	Client *dockerClient.Client
 }
 
 func (docker *Docker) ListServices() (swarmServices []swarm.Service, err error) {
 	log.Printf("List Swarm services started")
-	swarmService, err := docker.client.ListServices(dockerClient.ListServicesOptions{})
+	swarmService, err := docker.Client.ListServices(dockerClient.ListServicesOptions{})
 	if err != nil {
 		log.Printf("Swarm list services failed because %v \n", err)
 		return swarmService, err
@@ -22,7 +22,7 @@ func (docker *Docker) ListServices() (swarmServices []swarm.Service, err error) 
 }
 
 func (docker *Docker) GetServices(id string) (swarmServices *swarm.Service, err error) {
-	swarmService, err := docker.client.InspectService(id)
+	swarmService, err := docker.Client.InspectService(id)
 	log.Printf("Swarm service image name: %s \n", swarmService.Spec.TaskTemplate.ContainerSpec.Image)
 	return swarmService, err
 }
@@ -33,7 +33,7 @@ func (docker *Docker) GetSwarmServiceImage(swarmService swarm.Service) string {
 }
 
 func (docker *Docker) UpdateServices(swarmService *swarm.Service, labels map[string]string) error {
-	err := docker.client.UpdateService(swarmService.ID, dockerClient.UpdateServiceOptions{
+	err := docker.Client.UpdateService(swarmService.ID, dockerClient.UpdateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
 				Labels: labels,
@@ -79,6 +79,6 @@ func NewDocker() (cli *Docker, err error) {
 	client, err := dockerClient.NewVersionedClient(endpoint, "1.24")
 
 	return &Docker{
-		client: client,
+		Client: client,
 	}, err
 }

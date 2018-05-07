@@ -3,6 +3,7 @@ package controller
 import (
 	"time"
 
+	dockerClient "github.com/blackducksoftware/perceivers/docker/pkg/docker"
 	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,12 +17,14 @@ type Handler interface {
 type EventHandler struct {
 	handlers      map[string][]Handler
 	dockerClient  *docker.Client
+	serviceClient *dockerClient.Docker
 	listener      chan *docker.APIEvents
 	workers       chan *worker
 	workerTimeout time.Duration
+	perceptorURL  string
 }
 
-func NewEventHandler(bufferSize int, workerPoolSize int, dockerClient *docker.Client, handlers map[string][]Handler) (*EventHandler, error) {
+func NewEventHandler(bufferSize int, workerPoolSize int, dockerClient *dockerClient.Docker, handlers map[string][]Handler, perceptorURL string) *EventHandler {
 	workers := make(chan *worker, workerPoolSize)
 	for i := 0; i < workerPoolSize; i++ {
 		workers <- &worker{}
@@ -29,13 +32,20 @@ func NewEventHandler(bufferSize int, workerPoolSize int, dockerClient *docker.Cl
 
 	eventHandler := &EventHandler{
 		handlers:      handlers,
-		dockerClient:  dockerClient,
+		dockerClient:  dockerClient.Client,
+		serviceClient: dockerClient,
 		listener:      make(chan *docker.APIEvents, bufferSize),
 		workers:       workers,
 		workerTimeout: workerTimeout,
+		perceptorURL:  perceptorURL,
 	}
 
-	return eventHandler, nil
+	return eventHandler
+}
+
+func (e *EventHandler) Run() {
+	defer e.Stop()
+	e.Start()
 }
 
 func (e *EventHandler) Start() error {
@@ -88,6 +98,9 @@ func (w *worker) processDockerEvents(event *docker.APIEvents, e *EventHandler) {
 		for _, handler := range handlers {
 			if err := handler.Handle(event); err != nil {
 				log.Errorf("Error processing event %#v. Error: %v", event, err)
+			} else {
+				swarmService, err := e.serviceClient.GetServices(event.ID)
+				log.Infof("Swarm service name: %s, error: %v", swarmService.Spec.Name, err)
 			}
 		}
 	}
