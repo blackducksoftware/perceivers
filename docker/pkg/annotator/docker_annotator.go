@@ -29,6 +29,7 @@ import (
 	"github.com/blackducksoftware/perceivers/docker/pkg/metrics"
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
+	"github.com/blackducksoftware/perceivers/pkg/docker"
 	"github.com/docker/docker/api/types/swarm"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
@@ -137,8 +138,10 @@ func (sa *DockerAnnotator) addImageLabels(swarmService *swarm.Service, imageAnno
 	if currentLabels == nil {
 		currentLabels = map[string]string{}
 	}
+
+	name, _, _, _ := docker.ParseDockerSwarmImageString(swarmService.Spec.TaskTemplate.ContainerSpec.Image)
 	// Generate the labels that should be on the image
-	newLabels := annotations.CreateImageLabels(imageAnnotations, "", 0)
+	newLabels := annotations.CreateImageLabels(imageAnnotations, name, 0)
 	log.Infof("Comparing labelled service %s", serviceName)
 	if sa.h.CompareMaps(currentLabels, newLabels) {
 		setLabelsStart := time.Now()
