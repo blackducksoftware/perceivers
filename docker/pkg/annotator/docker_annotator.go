@@ -142,7 +142,7 @@ func (sa *DockerAnnotator) addImageLabels(swarmService *swarm.Service, imageAnno
 	name, _, _, _ := docker.ParseDockerSwarmImageString(swarmService.Spec.TaskTemplate.ContainerSpec.Image)
 	// Generate the labels that should be on the image
 	newLabels := annotations.CreateImageLabels(imageAnnotations, name, 0)
-	log.Infof("Comparing labelled service %s", serviceName)
+	log.Infof("Comparing labelled service %s with new labels %v", serviceName, newLabels)
 	if sa.h.CompareMaps(currentLabels, newLabels) {
 		setLabelsStart := time.Now()
 		log.Infof("Started labelled service %s", serviceName)
