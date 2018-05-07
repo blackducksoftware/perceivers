@@ -36,13 +36,11 @@ func (docker *Docker) UpdateServices(swarmService *swarm.Service, labels map[str
 	log.Printf("Update swarm service for image: %s, service id: %s \n", swarmService.Spec.TaskTemplate.ContainerSpec.Image, swarmService.ID)
 	mergedLabels := []map[string]string{swarmService.Spec.TaskTemplate.ContainerSpec.Labels, labels}
 	labels = mergeMaps(mergedLabels...)
-	taskTemplate := swarmService.Spec.TaskTemplate
-	taskTemplate.ContainerSpec.Labels = labels
+	serviceSpec := swarmService.Spec
+	serviceSpec.TaskTemplate.ContainerSpec.Labels = labels
 
 	update := dockerClient.UpdateServiceOptions{
-		ServiceSpec: swarm.ServiceSpec{
-			TaskTemplate: taskTemplate,
-		},
+		ServiceSpec: serviceSpec,
 	}
 	err := docker.Client.UpdateService(swarmService.ID, update)
 	return err
