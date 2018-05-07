@@ -33,16 +33,17 @@ func (docker *Docker) GetSwarmServiceImage(swarmService swarm.Service) string {
 }
 
 func (docker *Docker) UpdateServices(swarmService *swarm.Service, labels map[string]string) error {
-	log.Printf("Update swarm service for image: %s \n", swarmService.Spec.TaskTemplate.ContainerSpec.Image)
+	log.Printf("Update swarm service for image: %s, service id: %s \n", swarmService.Spec.TaskTemplate.ContainerSpec.Image, swarmService.ID)
 	mergedLabels := []map[string]string{swarmService.Spec.TaskTemplate.ContainerSpec.Labels, labels}
 	labels = mergeMaps(mergedLabels...)
 	taskTemplate := swarmService.Spec.TaskTemplate
 	taskTemplate.ContainerSpec.Labels = labels
-	err := docker.Client.UpdateService(swarmService.ID, dockerClient.UpdateServiceOptions{
+	update := dockerClient.UpdateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			TaskTemplate: taskTemplate,
 		},
-	})
+	}
+	err := docker.Client.UpdateService(swarmService.ID, update)
 	return err
 }
 
