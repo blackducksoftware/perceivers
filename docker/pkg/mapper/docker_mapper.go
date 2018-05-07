@@ -41,13 +41,14 @@ func NewPerceptorPodFromSwarmServices(swarmService swarm.Service) (*perceptorapi
 	if len(swarmService.ID) > 0 {
 		imageName := swarmService.Spec.TaskTemplate.ContainerSpec.Image
 		log.Printf("Converting Swarm service image %s to Perceptor pod", imageName)
-		name, sha, err := docker.ParseImageIDString(imageName)
-		log.Printf("Name: %s, sha: %s, err: %v", name, sha, err)
+		name, tag, sha, err := docker.ParseDockerSwarmImageString(imageName)
+		log.Printf("Name: %s, tag: %s, sha: %s, err: %v", name, tag, sha, err)
 		if err != nil {
 			metrics.RecordError("swarm_service_mapper", "unable to parse docker swarm imageId")
 			return nil, fmt.Errorf("unable to parse docker swarm imageId string %s from service %s: %v", imageName, swarmService.Spec.Name, err)
 		}
-		addedCont := perceptorapi.NewContainer(*perceptorapi.NewImage(name, sha, imageName), swarmService.ID)
+		image := fmt.Sprintf("%s:%s", name, tag)
+		addedCont := perceptorapi.NewContainer(*perceptorapi.NewImage(name, sha, image), swarmService.Spec.Name)
 		containers = append(containers, *addedCont)
 	} else {
 		metrics.RecordError("swarm_service_mapper", "empty docker swarm imageId")

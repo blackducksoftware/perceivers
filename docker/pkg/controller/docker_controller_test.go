@@ -27,7 +27,8 @@ func TestEventHandler(t *testing.T) {
 	handler := &testHandler{
 		handlerFunc: hFn,
 	}
-	handlers := map[string][]Handler{"exec_die": {handler}}
+	handlers := map[string][]Handler{"create": {handler}}
+
 	endpoint := "unix:///var/run/docker.sock"
 	dockerClient, err := docker.NewVersionedClient(endpoint, "1.24")
 	if err != nil {

@@ -99,15 +99,15 @@ func TestParseImageIDString(t *testing.T) {
 			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
 			shouldPass:  false,
 		},
-		{
-			description: "Swarm prefix",
-			prefix:      "",
-			name:        "abc/def",
-			tag:         ":1.0",
-			shaPrefix:   "@",
-			sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
-			shouldPass:  true,
-		},
+		// {
+		// 	description: "Swarm prefix",
+		// 	prefix:      "",
+		// 	name:        "abc/def",
+		// 	tag:         ":1.0",
+		// 	shaPrefix:   "@",
+		// 	sha:         "cb4983d8399a59bb5ee6e68b6177d878966a8fe41abe18a45c3b1d8809f1d043",
+		// 	shouldPass:  true,
+		// },
 	}
 
 	for _, tc := range testcases {

@@ -44,12 +44,12 @@ func ParseImageIDString(imageID string) (string, string, error) {
 	if strings.HasPrefix(imageID, "docker://") {
 		return "", "", fmt.Errorf("scanning of unscheduled images (%s) is not supported, ", imageID)
 	}
-	image, digest, err := parseDockerSwarmImageString(imageID)
-	if err != nil {
-		return parseImageString(imageID)
-	} else {
-		return image, digest, err
-	}
+	// image, digest, err := parseDockerSwarmImageString(imageID)
+	// if err != nil {
+	return parseImageString(imageID)
+	// } else {
+	// 	return image, digest, err
+	// }
 }
 
 func parseImageString(imageID string) (string, string, error) {
@@ -81,12 +81,13 @@ func parseDockerPullableImageString(imageID string) (string, string, error) {
 	return name, digest, nil
 }
 
-func parseDockerSwarmImageString(image string) (string, string, error) {
+func ParseDockerSwarmImageString(image string) (string, string, string, error) {
 	match := swarmImageRegexp.FindStringSubmatch(image)
 	if len(match) != 4 {
-		return "", "", fmt.Errorf("unable to match swarmImageRegexp regex <%s> to input <%s>", swarmImageRegexp.String(), image)
+		return "", "", "", fmt.Errorf("unable to match swarmImageRegexp regex <%s> to input <%s>", swarmImageRegexp.String(), image)
 	}
 	name := match[1]
+	tag := match[2]
 	digest := match[3]
-	return name, digest, nil
+	return name, tag, digest, nil
 }
