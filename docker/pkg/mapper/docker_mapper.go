@@ -42,17 +42,18 @@ func NewPerceptorPodFromSwarmServices(swarmService swarm.Service) (*perceptorapi
 		imageName := swarmService.Spec.TaskTemplate.ContainerSpec.Image
 		log.Printf("Converting Swarm service image %s to Perceptor pod", imageName)
 		name, tag, sha, err := docker.ParseDockerSwarmImageString(imageName)
-		log.Printf("Name: %s, tag: %s, sha: %s, err: %v", name, tag, sha, err)
+		serviceName := swarmService.Spec.Name
+		log.Printf("Service name: %s, Name: %s, tag: %s, sha: %s, err: %v", serviceName, name, tag, sha, err)
 		if err != nil {
 			metrics.RecordError("swarm_service_mapper", "unable to parse docker swarm imageId")
-			return nil, fmt.Errorf("unable to parse docker swarm imageId string %s from service %s: %v", imageName, swarmService.Spec.Name, err)
+			return nil, fmt.Errorf("unable to parse docker swarm imageId string %s from service %s: %v", imageName, serviceName, err)
 		}
 		image := fmt.Sprintf("%s:%s", name, tag)
-		addedCont := perceptorapi.NewContainer(*perceptorapi.NewImage(name, sha, image), swarmService.Spec.Name)
+		addedCont := perceptorapi.NewContainer(*perceptorapi.NewImage(name, sha, image), serviceName)
 		containers = append(containers, *addedCont)
 	} else {
 		metrics.RecordError("swarm_service_mapper", "empty docker swarm imageId")
 		return nil, fmt.Errorf("empty docker swarm imageId from service %s, id %s", swarmService.Spec.Name, swarmService.ID)
 	}
-	return nil, nil
+	return perceptorapi.NewPod(swarmService.Spec.Name, swarmService.ID, "perceptor", containers), nil
 }
