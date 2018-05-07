@@ -108,6 +108,7 @@ func (pd *DockerDumper) getAllServicesAsPerceptorPods() ([]perceptorapi.Pod, err
 
 	// Translate the pods from kubernetes to perceptor format
 	for _, swarmService := range swarmServices {
+		log.Printf("Translating the Swarm service %s", swarmService.Spec.Name)
 		perceptorPod, err := mapper.NewPerceptorPodFromSwarmServices(swarmService)
 		if err != nil {
 			metrics.RecordError("swarm_service_dumper", "unable to convert swarm service to perceptor pod")
