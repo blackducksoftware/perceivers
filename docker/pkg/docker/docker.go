@@ -38,6 +38,7 @@ func (docker *Docker) UpdateServices(swarmService *swarm.Service, labels map[str
 	labels = mergeMaps(mergedLabels...)
 	taskTemplate := swarmService.Spec.TaskTemplate
 	taskTemplate.ContainerSpec.Labels = labels
+
 	update := dockerClient.UpdateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			TaskTemplate: taskTemplate,
