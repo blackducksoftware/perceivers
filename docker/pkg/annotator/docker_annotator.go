@@ -132,6 +132,7 @@ func (sa *DockerAnnotator) addImageLabels(swarmService *swarm.Service, imageAnno
 	// Get the list of labels that is currently on the service
 	getLabelsStart := time.Now()
 	currentLabels := swarmService.Spec.TaskTemplate.ContainerSpec.Labels
+	log.Infof("Started labelled service %s with labels %v", serviceName, currentLabels)
 	metrics.RecordDuration("get service labels", time.Now().Sub(getLabelsStart))
 	if currentLabels == nil {
 		currentLabels = map[string]string{}
