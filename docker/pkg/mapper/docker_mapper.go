@@ -55,5 +55,5 @@ func NewPerceptorPodFromSwarmServices(swarmService swarm.Service) (*perceptorapi
 		metrics.RecordError("swarm_service_mapper", "empty docker swarm imageId")
 		return nil, fmt.Errorf("empty docker swarm imageId from service %s, id %s", swarmService.Spec.Name, swarmService.ID)
 	}
-	return perceptorapi.NewPod(swarmService.ID, swarmService.ID, "", containers), nil
+	return perceptorapi.NewPod(swarmService.ID, swarmService.ID, swarmService.Spec.Name, containers), nil
 }
