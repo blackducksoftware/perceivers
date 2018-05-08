@@ -38,11 +38,10 @@ type PodPerceiverConfig struct {
 }
 
 // GetPodPerceiverConfig returns a configuration object to configure a PodPerceiver
-func GetPodPerceiverConfig() (*PodPerceiverConfig, error) {
+func GetPodPerceiverConfig(configPath string) (*PodPerceiverConfig, error) {
 	var cfg *PodPerceiverConfig
 
-	viper.SetConfigName("perceiver")
-	viper.AddConfigPath("/etc/perceiver")
+	viper.SetConfigFile(configPath)
 
 	err := viper.ReadInConfig()
 	if err != nil {

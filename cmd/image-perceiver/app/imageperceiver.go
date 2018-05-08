@@ -57,8 +57,8 @@ type ImagePerceiver struct {
 }
 
 // NewImagePerceiver creates a new ImagePerceiver object
-func NewImagePerceiver(handler annotations.ImageAnnotatorHandler) (*ImagePerceiver, error) {
-	config, err := GetImagePerceiverConfig()
+func NewImagePerceiver(handler annotations.ImageAnnotatorHandler, configPath string) (*ImagePerceiver, error) {
+	config, err := GetImagePerceiverConfig(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config: %v", err)
 	}

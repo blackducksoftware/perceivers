@@ -54,8 +54,8 @@ type PodPerceiver struct {
 }
 
 // NewPodPerceiver creates a new PodPerceiver object
-func NewPodPerceiver(handler annotations.PodAnnotatorHandler) (*PodPerceiver, error) {
-	config, err := GetPodPerceiverConfig()
+func NewPodPerceiver(handler annotations.PodAnnotatorHandler, configPath string) (*PodPerceiver, error) {
+	config, err := GetPodPerceiverConfig(configPath)
 	if err != nil {
 		panic(fmt.Errorf("failed to read config: %v", err))
 	}

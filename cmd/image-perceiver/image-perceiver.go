@@ -23,6 +23,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/blackducksoftware/perceivers/cmd/image-perceiver/app"
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
@@ -32,7 +33,8 @@ import (
 
 func main() {
 	log.Info("starting image-perceiver")
-
+	configPath := os.Args[1]
+	log.Printf("Config path: %s", configPath)
 	handler := annotations.ImageAnnotatorHandlerFuncs{
 		ImageLabelCreationFunc:      annotations.CreateImageLabels,
 		ImageAnnotationCreationFunc: annotations.CreateImageAnnotations,
@@ -41,7 +43,7 @@ func main() {
 		},
 	}
 	// Create the Image Perceiver
-	perceiver, err := app.NewImagePerceiver(handler)
+	perceiver, err := app.NewImagePerceiver(handler, configPath)
 	if err != nil {
 		panic(fmt.Errorf("failed to create image-perceiver: %v", err))
 	}
