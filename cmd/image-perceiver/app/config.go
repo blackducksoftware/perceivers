@@ -38,11 +38,10 @@ type ImagePerceiverConfig struct {
 }
 
 // GetImagePerceiverConfig returns a configuration object to configure a ImagePerceiver
-func GetImagePerceiverConfig() (*ImagePerceiverConfig, error) {
+func GetImagePerceiverConfig(configPath string) (*ImagePerceiverConfig, error) {
 	var cfg *ImagePerceiverConfig
 
-	viper.SetConfigName("perceiver")
-	viper.AddConfigPath("/etc/perceiver")
+	viper.SetConfigFile(configPath)
 
 	err := viper.ReadInConfig()
 	if err != nil {

@@ -23,6 +23,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/blackducksoftware/perceivers/cmd/pod-perceiver/app"
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
@@ -32,7 +33,8 @@ import (
 
 func main() {
 	log.Info("starting pod-perceiver")
-
+	configPath := os.Args[1]
+	log.Printf("Config path: %s", configPath)
 	handler := annotations.PodAnnotatorHandlerFuncs{
 		PodLabelCreationFunc:      annotations.CreatePodLabels,
 		PodAnnotationCreationFunc: annotations.CreatePodAnnotations,
@@ -46,7 +48,7 @@ func main() {
 	}
 
 	// Create the Pod Perceiver
-	perceiver, err := app.NewPodPerceiver(handler)
+	perceiver, err := app.NewPodPerceiver(handler, configPath)
 	if err != nil {
 		panic(fmt.Errorf("failed to create pod-perceiver: %v", err))
 	}
