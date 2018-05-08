@@ -1,0 +1,88 @@
+version: "3.0"
+services:
+  perceiver:
+    # docker-perceiver
+    image: gcr.io/gke-verification/blackducksoftware/docker-perceiver:docker-swarm
+    volumes:
+      - ./perceiver.yaml:/etc/perceiver/perceiver.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["./docker-perceiver", "/etc/perceiver/perceiver.yaml"]
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "3002:3002"
+    networks:
+      - webnet
+  perceptor:
+    # perceptor
+    image: gcr.io/gke-verification/blackducksoftware/perceptor:config-map-change
+    volumes:
+      - ./perceptor.yaml:/etc/perceptor/perceptor.yaml
+    command: ["./perceptor", "/etc/perceptor/perceptor.yaml"]
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "3001:3001"
+    environment:
+      - PCP_HUBUSERPASSWORD=blackduck
+    networks:
+      - webnet
+  perceptor-scanner:
+    # perceptor-scanner
+    image: gcr.io/gke-verification/blackducksoftware/perceptor-scanner:config-map-change
+    volumes:
+      - ./perceptor_scanner.yaml:/etc/perceptor-scanner/perceptor_scanner.yaml
+      - /home/ec2-user/work/images:/var/images
+    depends_on:
+      - "perceptor"
+    command: ["./perceptor-scanner", "/etc/perceptor-scanner/perceptor_scanner.yaml"]
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "3003:3003"
+    environment:
+      - PCP_HUBUSERPASSWORD=blackduck
+    networks:
+      - webnet
+  perceptor-imagefacade:
+    # perceptor-imagefacade
+    image: gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:config-map-change
+    volumes:
+      - ./perceptor_imagefacade.yaml:/etc/perceptor-imagefacade/perceptor_imagefacade.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/ec2-user/work/images:/var/images
+    depends_on:
+      - "perceptor"
+    command: ["./perceptor-imagefacade", "/etc/perceptor-imagefacade/perceptor_imagefacade.yaml"]
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "3004:3004"
+    networks:
+      - webnet
+networks:
+  webnet:

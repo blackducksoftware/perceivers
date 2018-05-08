@@ -1,0 +1,10 @@
+{
+  "HubHost": "35.193.103.39",
+  "HubPort": "443",
+  "HubUser": "sysadmin",
+  "HubUserPasswordEnvVar": "PCP_HUBUSERPASSWORD",
+  "HubClientTimeoutSeconds": "5",
+  "ConcurrentScanLimit": "7",
+  "Port": "3001",
+  "LogLevel": "info"
+}

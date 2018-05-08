@@ -1,0 +1,8 @@
+{
+  "Port": "3002",
+  "PerceptorHost": "perceptor",
+  "PerceptorPort": "3001",
+  "AnnotationIntervalSeconds": "30",
+  "DumpIntervalMinutes": "30",
+  "LogLevel": "info"
+}

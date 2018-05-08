@@ -1,0 +1,7 @@
+{
+  "DockerUser": "admin",
+  "DockerPassword": "",
+  "Port": "3004",
+  "InternalDockerRegistries": "",
+  "LogLevel": "info"
+}
