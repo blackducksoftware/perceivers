@@ -28,6 +28,7 @@ get_files() {
     \( \
       -wholename '*/vendor/*' \
       -o -wholename '*/_output/*' \
+      -o -wholename '*/hack/*' \
     \) -prune \
   \) -name '*.go'
 }
