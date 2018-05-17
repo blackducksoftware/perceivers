@@ -13,17 +13,18 @@
     "hubapi",
     "hubclient"
   ]
-  revision = "2a8f3fb460e113ce9d2fabcbc1099ddf1d17c656"
-  version = "v0.9.2"
+  revision = "373ae7b666893f7ea9285f02d31eceb552946b25"
+  source = "git@github.com:blackducksoftware/hub-client-go.git"
+  version = "v0.9.4"
 
 [[projects]]
+  branch = "master"
   name = "github.com/blackducksoftware/perceptor"
   packages = [
     "pkg/api",
     "pkg/hub"
   ]
-  revision = "7b1a9e80fd0c79f53638456dac450bdddc6845af"
-  version = "2.0.0"
+  revision = "c3c93f0484c6b9ba74b56d92adb2deb4de3b5b4f"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -180,8 +181,8 @@
 [[projects]]
   name = "github.com/prometheus/client_golang"
   packages = ["prometheus"]
-  revision = "c5b7fccd204277076155f10851dad72b76a49317"
-  version = "v0.8.0"
+  revision = "967789050ba94deca04a5e84cce8ad472ce313c1"
+  version = "v0.9.0-pre1"
 
 [[projects]]
   branch = "master"
@@ -487,6 +488,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b22e561493aaf0158de91c38d45e860803372241fa7134f36d0f61c52a9d4de9"
+  inputs-digest = "05aecf7f36e31694e2d611de32ecb823602f668826340488d88900e855aae23b"
   solver-name = "gps-cdcl"
   solver-version = 1

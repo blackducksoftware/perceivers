@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/blackducksoftware/perceptor"
-  version = "2.0.0"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/fsnotify/fsnotify"
@@ -54,12 +54,10 @@
   version = "1.0.2"
 
 [[constraint]]
-#  branch = "master"
   name = "k8s.io/api"
   version = "kubernetes-1.10.0"
 
 [[constraint]]
-#  branch = "master"
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.10.0"
 
