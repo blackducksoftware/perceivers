@@ -21,6 +21,8 @@ under the License.
 
 package api
 
-type SetConcurrentScanLimit struct {
-	Limit int
+// PostCommand handles commands.  The values aren't important; only
+// the presence or absence of a key matters.
+type PostCommand struct {
+	ResetCircuitBreaker *bool
 }

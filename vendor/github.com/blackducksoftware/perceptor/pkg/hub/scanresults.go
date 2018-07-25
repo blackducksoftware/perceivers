@@ -21,12 +21,12 @@ under the License.
 
 package hub
 
-// ImageScan models the results that we expect to get from the hub after
+// ScanResults models the results that we expect to get from the hub after
 // scanning a docker image.
-type ImageScan struct {
+type ScanResults struct {
 	RiskProfile                      RiskProfile
 	PolicyStatus                     PolicyStatus
-	ScanSummary                      ScanSummary
+	ScanSummaries                    []ScanSummary
 	ComponentsHref                   string
 	CodeLocationCreatedAt            string
 	CodeLocationMappedProjectVersion string
@@ -36,20 +36,42 @@ type ImageScan struct {
 	CodeLocationUpdatedAt            string
 }
 
-// IsDone returns whether the hub imagescan results indicate that the scan is
-// complete.
-func (scan *ImageScan) ScanSummaryStatus() ScanSummaryStatus {
-	return scan.ScanSummary.Status
+// ScanSummaryStatus looks through all the scan summaries and:
+//  - 1+ success: returns success
+//  - 0 success, 1+ inprogress: returns inprogress
+//  - 0 success, 0 inprogress: returns failure
+// TODO: weird corner cases:
+//  - no scan summaries ... ? should that be inprogress, or error?
+//    or should we just assume that we'll always have at least 1?
+func (scan *ScanResults) ScanSummaryStatus() ScanSummaryStatus {
+	inProgress := false
+	for _, scanSummary := range scan.ScanSummaries {
+		switch scanSummary.Status {
+		case ScanSummaryStatusSuccess:
+			return ScanSummaryStatusSuccess
+		case ScanSummaryStatusInProgress:
+			inProgress = true
+		default:
+			// nothing to do
+		}
+	}
+	if inProgress {
+		return ScanSummaryStatusInProgress
+	}
+	return ScanSummaryStatusFailure
 }
 
-func (scan *ImageScan) VulnerabilityCount() int {
+// VulnerabilityCount .....
+func (scan *ScanResults) VulnerabilityCount() int {
 	return scan.RiskProfile.HighRiskVulnerabilityCount()
 }
 
-func (scan *ImageScan) PolicyViolationCount() int {
+// PolicyViolationCount .....
+func (scan *ScanResults) PolicyViolationCount() int {
 	return scan.PolicyStatus.ViolationCount()
 }
 
-func (scan *ImageScan) OverallStatus() PolicyStatusType {
+// OverallStatus .....
+func (scan *ScanResults) OverallStatus() PolicyStatusType {
 	return scan.PolicyStatus.OverallStatus
 }
