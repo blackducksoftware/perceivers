@@ -111,3 +111,59 @@ func TestParseImageIDString(t *testing.T) {
 		}
 	}
 }
+
+func TestParseImageString(t *testing.T) {
+	testcases := []struct {
+		description string
+		repo        string
+		tag         string
+	}{
+		{
+			description: "repo with path and tag",
+			repo:        "url.com/imagename",
+			tag:         "latest",
+		},
+		{
+			description: "repo with path without tag",
+			repo:        "url.com/imagename",
+			tag:         "",
+		},
+		{
+			description: "repo with path and port and tag",
+			repo:        "url.com:80/imagename",
+			tag:         "latest",
+		},
+		{
+			description: "repo with path and port without tag",
+			repo:        "url.com:80/imagename",
+			tag:         "",
+		},
+		{
+			description: "image name only with tag",
+			repo:        "imagename",
+			tag:         "1.2.3",
+		},
+		{
+			description: "image name only without tag",
+			repo:        "imagename",
+			tag:         "",
+		},
+	}
+
+	for _, tc := range testcases {
+		var image string
+		if len(tc.tag) > 0 {
+			image = fmt.Sprintf("%s:%s", tc.repo, tc.tag)
+		} else {
+			image = tc.repo
+		}
+		repo, tag := ParseImageString(image)
+		if repo != tc.repo {
+			t.Errorf("expected repo %s got %s", tc.repo, repo)
+		}
+
+		if tag != tc.tag {
+			t.Errorf("expected tag %s got %s", tc.tag, tag)
+		}
+	}
+}
