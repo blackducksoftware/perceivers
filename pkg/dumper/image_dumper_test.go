@@ -48,9 +48,8 @@ func TestGetAllImagesAsPerceptorImages(t *testing.T) {
 		DockerImageReference: "imageName@sha256:235n348g24",
 	}
 	validPerceptorImage := perceptorapi.Image{
-		Name:        "imageName",
-		Sha:         "235n348g24",
-		DockerImage: "imageName@sha256:235n348g24",
+		Repository: "imageName",
+		Sha:        "235n348g24",
 	}
 
 	testcases := []struct {
