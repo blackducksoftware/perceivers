@@ -68,12 +68,12 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 				{
 					Name:    "image1",
 					ImageID: "docker-pullable://imageName@sha256:23f2sdf23",
-					Image:   "imageName@sha256:23f2sdf23",
+					Image:   "imageName",
 				},
 				{
 					Name:    "image2",
 					ImageID: "docker-pullable://imageName2@sha256:4823nv823rn",
-					Image:   "imageName2@sha256:4823nv823rn",
+					Image:   "imageName2",
 				},
 			},
 		},
@@ -85,17 +85,15 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 			{
 				Name: "image1",
 				Image: perceptorapi.Image{
-					Name:        "imageName",
-					Sha:         "23f2sdf23",
-					DockerImage: "imageName@sha256:23f2sdf23",
+					Repository: "imageName",
+					Sha:        "23f2sdf23",
 				},
 			},
 			{
 				Name: "image2",
 				Image: perceptorapi.Image{
-					Name:        "imageName2",
-					Sha:         "4823nv823rn",
-					DockerImage: "imageName2@sha256:4823nv823rn",
+					Repository: "imageName2",
+					Sha:        "4823nv823rn",
 				},
 			},
 		},

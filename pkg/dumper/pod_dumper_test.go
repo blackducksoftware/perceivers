@@ -71,9 +71,9 @@ func TestGetAllPodsAsPerceptorPods(t *testing.T) {
 			{
 				Name: "image1",
 				Image: perceptorapi.Image{
-					Name:        "imageName",
-					Sha:         "23f2sdf23",
-					DockerImage: "imageName@sha256:23f2sdf23",
+					Repository: "imageName",
+					Sha:        "23f2sdf23",
+					Tag:        "latest",
 				},
 			},
 		},

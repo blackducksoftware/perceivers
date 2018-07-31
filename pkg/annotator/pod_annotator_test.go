@@ -41,7 +41,7 @@ import (
 
 var scannedImages = []perceptorapi.ScannedImage{
 	{
-		Name:             "image1",
+		Repository:       "image1",
 		Sha:              "ASDJ4FSF3FSFK3SF450",
 		PolicyViolations: 100,
 		Vulnerabilities:  5,
@@ -49,7 +49,7 @@ var scannedImages = []perceptorapi.ScannedImage{
 		ComponentsURL:    "http://url.com",
 	},
 	{
-		Name:             "this.name.includes.registry.name/imagenameis/short/butthefulllengthwithregistryistoolong",
+		Repository:       "this.name.includes.registry.name/imagenameis/short/butthefulllengthwithregistryistoolong",
 		Sha:              "HAFGW2392FJGNE3FFK04",
 		PolicyViolations: 5,
 		Vulnerabilities:  15,
@@ -57,7 +57,7 @@ var scannedImages = []perceptorapi.ScannedImage{
 		ComponentsURL:    "http://new.com",
 	},
 	{
-		Name:             "this.name.includes.registry.name/and/many/directories/and/is/way/too/long/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Repository:       "this.name.includes.registry.name/and/many/directories/and/is/way/too/long/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		Sha:              "HAFGW2392FJGNE3FFK04",
 		PolicyViolations: 0,
 		Vulnerabilities:  0,
@@ -65,7 +65,7 @@ var scannedImages = []perceptorapi.ScannedImage{
 		ComponentsURL:    "http://thisurlisreallylongtoo.com/andwouldfailthe63characterlimit/butshouldntbeneeded",
 	},
 	{
-		Name:             "this/name/and/many/directories/and/is/way/too/long/tofitin/the63character/limitofalabel",
+		Repository:       "this/name/and/many/directories/and/is/way/too/long/tofitin/the63character/limitofalabel",
 		Sha:              "HAFGW2392FJGNE3FFK04",
 		PolicyViolations: 1,
 		Vulnerabilities:  40,
@@ -73,7 +73,7 @@ var scannedImages = []perceptorapi.ScannedImage{
 		ComponentsURL:    "http://thisurlisreallylongtoo.com/andwouldfailthe63characterlimit/butshouldntbeneeded",
 	},
 	{
-		Name:             "registry:port/imagenameis/short/butthefulllengthwithregistryistoolong",
+		Repository:       "registry:port/imagenameis/short/butthefulllengthwithregistryistoolong",
 		Sha:              "HAFGW2392FJGNE3FFK04",
 		PolicyViolations: 10,
 		Vulnerabilities:  1,
@@ -136,7 +136,7 @@ func makePodWithImage(pos int, name string, sha string) *v1.Pod {
 
 func makePod(pos int) *v1.Pod {
 	scannedImage := scannedImages[pos]
-	return makePodWithImage(pos, scannedImage.Name, scannedImage.Sha)
+	return makePodWithImage(pos, scannedImage.Repository, scannedImage.Sha)
 }
 
 func createPA() *PodAnnotator {
@@ -221,7 +221,7 @@ func TestAddPodAnnotations(t *testing.T) {
 	}
 
 	imageAnnotationSet := func(pos int) map[string]string {
-		return annotations.CreateImageAnnotations(makeImageAnnotationObj(pos), scannedImages[pos].Name, 0)
+		return annotations.CreateImageAnnotations(makeImageAnnotationObj(pos), scannedImages[pos].Repository, 0)
 	}
 
 	fullAnnotationSet := func(pos int) map[string]string {
@@ -340,7 +340,7 @@ func TestAddPodLabels(t *testing.T) {
 	}
 
 	imageLabelSet := func(pos int) map[string]string {
-		return annotations.CreateImageLabels(makeImageAnnotationObj(pos), scannedImages[pos].Name, 0)
+		return annotations.CreateImageLabels(makeImageAnnotationObj(pos), scannedImages[pos].Repository, 0)
 	}
 
 	fullLabelSet := func(pos int) map[string]string {
@@ -488,7 +488,7 @@ func TestAddPodLabels(t *testing.T) {
 				t.Errorf("[%s] key %s has value %s, which is longer than 63 characters", tc.description, k, updated[k])
 			}
 		}
-		newName := annotations.RemoveRegistryInfo(scannedImages[tc.position].Name)
+		newName := annotations.RemoveRegistryInfo(scannedImages[tc.position].Repository)
 		if len(newName) > 63 {
 			shortName := newName[0:63]
 			if strings.Compare(shortName, updated["image0"]) != 0 {
@@ -522,13 +522,13 @@ func TestGetPodContainerMap(t *testing.T) {
 			description:      "all containers scanned",
 			pod:              makePod(0),
 			additionalImages: make([]v1.ContainerStatus, 0),
-			resultMap:        map[string]string{"key0": scannedImages[0].Name + "0"},
+			resultMap:        map[string]string{"key0": scannedImages[0].Repository + "0"},
 		},
 		{
 			description:      "one container scanned, one not scanned",
 			pod:              makePod(0),
 			additionalImages: []v1.ContainerStatus{imageWithPrefix},
-			resultMap:        map[string]string{"key0": scannedImages[0].Name + "0"},
+			resultMap:        map[string]string{"key0": scannedImages[0].Repository + "0"},
 		},
 		{
 			description:      "2 images without scans",

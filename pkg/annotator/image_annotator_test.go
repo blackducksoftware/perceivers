@@ -188,28 +188,28 @@ func TestAddImageAnnotations(t *testing.T) {
 	}{
 		{
 			description:         "image with no annotations",
-			image:               makeImage(scannedImages[0].Name, scannedImages[0].Sha),
+			image:               makeImage(scannedImages[0].Repository, scannedImages[0].Sha),
 			existingAnnotations: make(map[string]string),
 			expectedAnnotations: imageAnnotations,
 			shouldAdd:           true,
 		},
 		{
 			description:         "image with existing annotations, no overlap",
-			image:               makeImage(scannedImages[0].Name, scannedImages[0].Sha),
+			image:               makeImage(scannedImages[0].Repository, scannedImages[0].Sha),
 			existingAnnotations: otherAnnotations,
 			expectedAnnotations: utils.MapMerge(otherAnnotations, imageAnnotations),
 			shouldAdd:           true,
 		},
 		{
 			description:         "pod with existing annotations, some overlap",
-			image:               makeImage(scannedImages[0].Name, scannedImages[0].Sha),
+			image:               makeImage(scannedImages[0].Repository, scannedImages[0].Sha),
 			existingAnnotations: partialAnnotationSet(),
 			expectedAnnotations: imageAnnotations,
 			shouldAdd:           true,
 		},
 		{
 			description:         "image with exact existing annotations",
-			image:               makeImage(scannedImages[0].Name, scannedImages[0].Sha),
+			image:               makeImage(scannedImages[0].Repository, scannedImages[0].Sha),
 			existingAnnotations: imageAnnotations,
 			expectedAnnotations: imageAnnotations,
 			shouldAdd:           false,
@@ -218,7 +218,7 @@ func TestAddImageAnnotations(t *testing.T) {
 
 	for _, tc := range testcases {
 		annotationObj := makeImageAnnotationObj(0)
-		fullName := fmt.Sprintf("%s@sha256:%s", scannedImages[0].Name, scannedImages[0].Sha)
+		fullName := fmt.Sprintf("%s@sha256:%s", scannedImages[0].Repository, scannedImages[0].Sha)
 		tc.image.SetAnnotations(tc.existingAnnotations)
 		result := createIA().addImageAnnotations(fullName, tc.image, annotationObj)
 		if result != tc.shouldAdd {
@@ -257,28 +257,28 @@ func TestAddImageLabels(t *testing.T) {
 	}{
 		{
 			description:    "image with no labels",
-			image:          makeImage(scannedImages[0].Name, scannedImages[0].Sha),
+			image:          makeImage(scannedImages[0].Repository, scannedImages[0].Sha),
 			existingLabels: make(map[string]string),
 			expectedLabels: imageLabels,
 			shouldAdd:      true,
 		},
 		{
 			description:    "image with existing labels, no overlap",
-			image:          makeImage(scannedImages[0].Name, scannedImages[0].Sha),
+			image:          makeImage(scannedImages[0].Repository, scannedImages[0].Sha),
 			existingLabels: otherLabels,
 			expectedLabels: utils.MapMerge(otherLabels, imageLabels),
 			shouldAdd:      true,
 		},
 		{
 			description:    "image with existing labels, some overlap",
-			image:          makeImage(scannedImages[0].Name, scannedImages[0].Sha),
+			image:          makeImage(scannedImages[0].Repository, scannedImages[0].Sha),
 			existingLabels: partialLabelSet(),
 			expectedLabels: imageLabels,
 			shouldAdd:      true,
 		},
 		{
 			description:    "image with exact existing labels",
-			image:          makeImage(scannedImages[0].Name, scannedImages[0].Sha),
+			image:          makeImage(scannedImages[0].Repository, scannedImages[0].Sha),
 			existingLabels: imageLabels,
 			expectedLabels: imageLabels,
 			shouldAdd:      false,
@@ -287,7 +287,7 @@ func TestAddImageLabels(t *testing.T) {
 
 	for _, tc := range testcases {
 		annotationObj := makeImageAnnotationObj(0)
-		fullName := fmt.Sprintf("%s@sha256:%s", scannedImages[0].Name, scannedImages[0].Sha)
+		fullName := fmt.Sprintf("%s@sha256:%s", scannedImages[0].Repository, scannedImages[0].Sha)
 		tc.image.SetLabels(tc.existingLabels)
 		result := createIA().addImageLabels(fullName, tc.image, annotationObj)
 		if result != tc.shouldAdd {
