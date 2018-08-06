@@ -17,13 +17,13 @@
   revision = "940138f994024143ee604ff0821f08ed2b597f9c"
 
 [[projects]]
-  branch = "master"
   name = "github.com/blackducksoftware/perceptor"
   packages = [
     "pkg/api",
     "pkg/hub"
   ]
   revision = "255a1e739b162098de273abecb3795d146f0e1eb"
+  version = "2.0.2"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -115,8 +115,8 @@
 [[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
-  revision = "ab8a2e0c74be9d3be70b3184d9acc634935ded82"
-  version = "1.1.4"
+  revision = "1624edc4454b8682399def8740d46db5e4362ba4"
+  version = "1.1.5"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -197,7 +197,7 @@
     "internal/bitbucket.org/ww/goautoneg",
     "model"
   ]
-  revision = "7600349dcfe1abd18d72d3a1770870d9800a7801"
+  revision = "c7de2306084e37d54b8be01f3541a8464345e9a5"
 
 [[projects]]
   branch = "master"
@@ -253,7 +253,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "c126467f60eb25f8f27e5a981f32a87e3965053f"
+  revision = "56440b844dfe139a8ac053f4ecac0b20b79058f4"
 
 [[projects]]
   branch = "master"
@@ -265,7 +265,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "3673e40ba22529d22c3fd7c93e97b0ce50fa7bdd"
+  revision = "f4c29de78a2a91c00474a2e689954305c350adf9"
 
 [[projects]]
   branch = "master"
@@ -274,7 +274,7 @@
     "unix",
     "windows"
   ]
-  revision = "e072cadbbdc8dd3d3ffa82b8b4b9304c261d9311"
+  revision = "34b17bdb430002e9db9ae7ddc8480b9fa05edc22"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -486,6 +486,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "05aecf7f36e31694e2d611de32ecb823602f668826340488d88900e855aae23b"
+  inputs-digest = "956d98cfebf8b986796114edcad468dd46b015141d7d174e562584542dad4afe"
   solver-name = "gps-cdcl"
   solver-version = 1
