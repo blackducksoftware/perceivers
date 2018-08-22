@@ -4,7 +4,7 @@
 
 The blackduck perceivers are upstream supported data center event handling APIs, meant to work with the upstream perceptor repository https://github.com/blackducksoftware/perceptor .
 
-## Repo struct
+## Repository structure
 
  - image: a perceiver for detecting and annotating image streams, especially on the openshift platform
  - pod: a perceiver for detecting and annotating pods, especially on the kubernetes and openshift platforms
