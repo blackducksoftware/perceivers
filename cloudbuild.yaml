@@ -3,28 +3,28 @@ steps:
 # Image perceiver
 
 - name: 'gcr.io/cloud-builders/go'
-  args: ['build', '-o', './image/_output/image-perceiver', './cmd/image-perceiver/image-perceiver.go']
+  args: ['build', '-o', './cmd/image-perceiver/image-perceiver', './cmd/image-perceiver/image-perceiver.go']
   env:
   - 'PROJECT_ROOT=github.com/blackducksoftware/perceivers'
   - 'CGO_ENABLED=0'
   - 'GOOS=linux'
   - 'GOARCH=amd64'
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/image-perceiver:$BRANCH_NAME', './image/.']
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/image-perceiver:$BRANCH_NAME', './cmd/image-perceiver/.']
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/image-perceiver:$BRANCH_NAME']
 
 # Pod perceiver
 
 - name: 'gcr.io/cloud-builders/go'
-  args: ['build', '-o', './pod/_output/pod-perceiver', './cmd/pod-perceiver/pod-perceiver.go']
+  args: ['build', '-o', './cmd/pod-perceiver/pod-perceiver', './cmd/pod-perceiver/pod-perceiver.go']
   env:
   - 'PROJECT_ROOT=github.com/blackducksoftware/perceivers'
   - 'CGO_ENABLED=0'
   - 'GOOS=linux'
   - 'GOARCH=amd64'
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/pod-perceiver:$BRANCH_NAME', './pod/.']
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/pod-perceiver:$BRANCH_NAME', './cmd/pod-perceiver/.']
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/pod-perceiver:$BRANCH_NAME']
   
