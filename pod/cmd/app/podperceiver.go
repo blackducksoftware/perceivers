@@ -60,7 +60,8 @@ func NewPodPerceiver(config *PodPerceiverConfig) (*PodPerceiver, error) {
 
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.PerceptorHost, config.PerceptorPort)
 	p := PodPerceiver{
-		podController:      controller.NewPodController(clientset, perceptorURL),
+		// Rob Rati ... avoiding stamp coupling!
+		podController:      controller.NewPodController(clientset, perceptorURL, config.Namespace),
 		podAnnotator:       annotator.NewPodAnnotator(clientset.CoreV1(), perceptorURL),
 		annotationInterval: time.Second * time.Duration(config.AnnotationIntervalSeconds),
 		podDumper:          dumper.NewPodDumper(clientset.CoreV1(), perceptorURL),

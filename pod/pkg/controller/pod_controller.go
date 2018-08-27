@@ -61,19 +61,22 @@ type PodController struct {
 }
 
 // NewPodController creates a new PodController object
-func NewPodController(kubeClient kubernetes.Interface, perceptorURL string) *PodController {
+func NewPodController(kubeClient kubernetes.Interface, perceptorURL string, namespace string) *PodController {
 	pc := PodController{
 		client: kubeClient,
 		queue:  workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Pods"),
 		podURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.PodPath),
 	}
+	if namespace != "" {
+		namespace = metav1.NamespaceAll
+	}
 	pc.podIndexer, pc.podController = cache.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-				return pc.client.CoreV1().Pods(metav1.NamespaceAll).List(opts)
+				return pc.client.CoreV1().Pods(namespace).List(opts)
 			},
 			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-				return pc.client.CoreV1().Pods(metav1.NamespaceAll).Watch(opts)
+				return pc.client.CoreV1().Pods(namespace).Watch(opts)
 			},
 		},
 		&v1.Pod{},
