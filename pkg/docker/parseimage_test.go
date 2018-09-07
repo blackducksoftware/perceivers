@@ -167,3 +167,16 @@ func TestParseImageString(t *testing.T) {
 		}
 	}
 }
+
+func TestParseWeirdStrings(t *testing.T) {
+	imageString := "gcr.io/gke-verification/blackducksoftware/perceptor@sha256:9914478c9642be49e7791a7a29207c0a6194c8bf6e9690ab5902008cce8af39f"
+	repo, tag := ParseImageString(imageString)
+	expectedRepo := "gcr.io/gke-verification/blackducksoftware/perceptor"
+	if repo != expectedRepo {
+		t.Errorf("repo: expected %s, got %s", expectedRepo, repo)
+	}
+	expectedTag := ""
+	if tag != expectedTag {
+		t.Errorf("tag: expected %s, got %s", expectedTag, tag)
+	}
+}
