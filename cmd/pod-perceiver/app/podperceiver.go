@@ -95,7 +95,7 @@ func (pp *PodPerceiver) Run(stopCh <-chan struct{}) {
 	go pp.podAnnotator.Run(pp.annotationInterval, stopCh)
 	go pp.podDumper.Run(pp.dumpInterval, stopCh)
 
-	log.Infof("starting prometheus on %d", pp.metricsURL)
+	log.Infof("starting prometheus on %s", pp.metricsURL)
 	http.ListenAndServe(pp.metricsURL, nil)
 
 	<-stopCh
