@@ -30,7 +30,7 @@ import (
 var dockerPullableRegexp = regexp.MustCompile("^docker-pullable://(.+)@sha256:([a-zA-Z0-9]+)$")
 
 //var dockerRegexp = regexp.MustCompile("^docker://sha256:([a-zA-Z0-9]+)$")
-var imageRegexp = regexp.MustCompile("^(.+)@sha256:([a-zA-Z0-9]+)$")
+var imageShaRegexp = regexp.MustCompile("^(.+)@sha256:([a-zA-Z0-9]+)$")
 
 // ParseImageIDString parses an ImageID that can pull an image from docker
 // Example image id:
@@ -47,9 +47,9 @@ func ParseImageIDString(imageID string) (string, string, error) {
 }
 
 func parseImageString(imageID string) (string, string, error) {
-	match := imageRegexp.FindStringSubmatch(imageID)
+	match := imageShaRegexp.FindStringSubmatch(imageID)
 	if len(match) != 3 {
-		return "", "", fmt.Errorf("unable to match imageRegexp regex <%s> to input <%s>", imageRegexp.String(), imageID)
+		return "", "", fmt.Errorf("unable to match imageRegexp regex <%s> to input <%s>", imageShaRegexp.String(), imageID)
 	}
 	name := match[1]
 	digest := match[2]
@@ -79,6 +79,11 @@ func parseDockerPullableImageString(imageID string) (string, string, error) {
 func ParseImageString(image string) (string, string) {
 	var repo string
 	var tag string
+
+	match := imageShaRegexp.FindStringSubmatch(image)
+	if len(match) == 3 {
+		return match[1], ""
+	}
 
 	imageOnly := image
 	imageIndex := strings.LastIndex(image, "/")
