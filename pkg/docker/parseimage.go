@@ -31,6 +31,7 @@ var dockerPullableRegexp = regexp.MustCompile("^docker-pullable://(.+)@sha256:([
 
 //var dockerRegexp = regexp.MustCompile("^docker://sha256:([a-zA-Z0-9]+)$")
 var imageShaRegexp = regexp.MustCompile("^(.+)@sha256:([a-zA-Z0-9]+)$")
+var imageTagRegexp = regexp.MustCompile("^(.+?)(:[^/]+)?$")
 
 // ParseImageIDString parses an ImageID that can pull an image from docker
 // Example image id:
@@ -77,31 +78,20 @@ func parseDockerPullableImageString(imageID string) (string, string, error) {
 
 // ParseImageString will take a docker image string and return the repo and tag parts
 func ParseImageString(image string) (string, string) {
-	var repo string
-	var tag string
-
 	match := imageShaRegexp.FindStringSubmatch(image)
 	if len(match) == 3 {
 		return match[1], ""
 	}
 
-	imageOnly := image
-	imageIndex := strings.LastIndex(image, "/")
-	if imageIndex > 0 {
-		imageOnly = image[imageIndex:]
+	tagMatch := imageTagRegexp.FindStringSubmatch(image)
+	if len(tagMatch) == 3 {
+		tag := tagMatch[2]
+		// drop the leading ':'  (e.g. ':latest' -> 'latest')
+		if len(tag) > 0 {
+			tag = tag[1:]
+		}
+		return tagMatch[1], tag
 	}
 
-	tagIndex := strings.LastIndex(imageOnly, ":")
-	if tagIndex >= 0 {
-		tag = imageOnly[tagIndex+1:]
-	}
-
-	if len(tag) > 0 {
-		imageTagIndex := strings.LastIndex(image, tag)
-		repo = image[:imageTagIndex-1]
-	} else {
-		repo = image
-	}
-
-	return repo, tag
+	return "", ""
 }
