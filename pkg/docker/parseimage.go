@@ -92,6 +92,6 @@ func ParseImageString(image string) (string, string) {
 		}
 		return tagMatch[1], tag
 	}
-
+	// TODO should we return an err here?
 	return "", ""
 }
