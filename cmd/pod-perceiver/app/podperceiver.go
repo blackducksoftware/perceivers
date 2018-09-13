@@ -80,7 +80,7 @@ func NewPodPerceiver(handler annotations.PodAnnotatorHandler, configPath string)
 		podController:      controller.NewPodController(clientset, perceptorURL, config.Namespace, handler),
 		podAnnotator:       annotator.NewPodAnnotator(clientset.CoreV1(), perceptorURL, handler),
 		annotationInterval: time.Second * time.Duration(config.AnnotationIntervalSeconds),
-		podDumper:          dumper.NewPodDumper(clientset.CoreV1(), perceptorURL),
+		podDumper:          dumper.NewPodDumper(clientset.CoreV1(), perceptorURL, config.Namespace),
 		dumpInterval:       time.Minute * time.Duration(config.DumpIntervalMinutes),
 		metricsURL:         fmt.Sprintf(":%d", config.Port),
 	}
