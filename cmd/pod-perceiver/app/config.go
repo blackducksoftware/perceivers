@@ -35,9 +35,9 @@ type PodPerceiverConfig struct {
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
 	Port                      int
-	// This is a mostly unused feauture, useful for demoing or constraining a perceiver to
-	// a specific namespace.
-	Namespace string
+
+	// easter egg for demos !
+	RequireLabel bool
 }
 
 // GetPodPerceiverConfig returns a configuration object to configure a PodPerceiver
