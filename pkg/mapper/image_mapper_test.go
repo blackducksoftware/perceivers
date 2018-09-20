@@ -33,6 +33,7 @@ import (
 )
 
 func TestNewPerceptorImageFromOSImage(t *testing.T) {
+	priority := 0
 	invalidImage := v1.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "invalidImage",
@@ -48,6 +49,7 @@ func TestNewPerceptorImageFromOSImage(t *testing.T) {
 	validPerceptorImage := perceptorapi.Image{
 		Repository: "imageName",
 		Sha:        "235n348g24",
+		Priority:   &priority,
 	}
 
 	testcases := []struct {

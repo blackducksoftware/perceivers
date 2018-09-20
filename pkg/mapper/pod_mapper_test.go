@@ -33,6 +33,7 @@ import (
 )
 
 func TestNewPerceptorPodFromKubePod(t *testing.T) {
+	priority := 1
 	invalidPod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "invalidPod",
@@ -78,6 +79,7 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 			},
 		},
 	}
+
 	validPerceptorPod := perceptorapi.Pod{
 		Name:      "podName",
 		Namespace: "ns",
@@ -87,6 +89,7 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 				Image: perceptorapi.Image{
 					Repository: "imageName",
 					Sha:        "23f2sdf23",
+					Priority:   &priority,
 				},
 			},
 			{
@@ -94,6 +97,7 @@ func TestNewPerceptorPodFromKubePod(t *testing.T) {
 				Image: perceptorapi.Image{
 					Repository: "imageName2",
 					Sha:        "4823nv823rn",
+					Priority:   &priority,
 				},
 			},
 		},
