@@ -100,20 +100,18 @@ var scannedPods = []perceptorapi.ScannedPod{
 }
 
 var results = perceptorapi.ScanResults{
-	HubScanClientVersion: "hub.scan.version",
-	HubVersion:           "hub.version",
-	Pods:                 scannedPods,
-	Images:               scannedImages,
+	Pods:   scannedPods,
+	Images: scannedImages,
 }
 
 func makeImageAnnotationObj(pos int) *annotations.ImageAnnotationData {
 	image := scannedImages[pos]
-	return annotations.NewImageAnnotationData(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL, results.HubVersion, results.HubScanClientVersion)
+	return annotations.NewImageAnnotationData(image.PolicyViolations, image.Vulnerabilities, image.OverallStatus, image.ComponentsURL, "", "")
 }
 
 func makePodAnnotationObj(pos int) *annotations.PodAnnotationData {
 	pod := scannedPods[pos%len(scannedPods)]
-	return annotations.NewPodAnnotationData(pod.PolicyViolations, pod.Vulnerabilities, pod.OverallStatus, results.HubVersion, results.HubScanClientVersion)
+	return annotations.NewPodAnnotationData(pod.PolicyViolations, pod.Vulnerabilities, pod.OverallStatus, "", "")
 }
 
 func makePodWithImage(pos int, name string, sha string) *v1.Pod {

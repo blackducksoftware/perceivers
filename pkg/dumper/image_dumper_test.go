@@ -22,6 +22,7 @@ under the License.
 package dumper
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -35,6 +36,7 @@ import (
 )
 
 func TestGetAllImagesAsPerceptorImages(t *testing.T) {
+	zero := 0
 	invalidImage := v1.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "invalidImage",
@@ -50,6 +52,7 @@ func TestGetAllImagesAsPerceptorImages(t *testing.T) {
 	validPerceptorImage := perceptorapi.Image{
 		Repository: "imageName",
 		Sha:        "235n348g24",
+		Priority:   &zero,
 	}
 
 	testcases := []struct {
@@ -89,7 +92,8 @@ func TestGetAllImagesAsPerceptorImages(t *testing.T) {
 		}
 		for cnt, image := range images {
 			if !reflect.DeepEqual(image, tc.expected[cnt]) {
-				t.Errorf("[%s] expected pod %v, got %v", tc.description, tc.expected[cnt], image)
+				bytes, _ := json.MarshalIndent([]interface{}{tc.expected[cnt], image}, "", "  ")
+				t.Errorf("[%s] expected pod %v, got %v; %s", tc.description, tc.expected[cnt], image, string(bytes))
 			}
 		}
 	}
