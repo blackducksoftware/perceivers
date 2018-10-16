@@ -48,6 +48,9 @@ type PodDumper struct {
 
 // NewPodDumper creates a new PodDumper object
 func NewPodDumper(core corev1.CoreV1Interface, perceptorURL string, nsFilter string) *PodDumper {
+	if nsFilter == "" {
+		nsFilter = metav1.NamespaceAll
+	}
 	return &PodDumper{
 		coreV1:     core,
 		allPodsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.AllPodsPath),
