@@ -72,6 +72,9 @@ func NewPodController(kubeClient kubernetes.Interface, perceptorURL string, nsFi
 		h:      handler,
 	}
 
+	if nsFilter == "" {
+		nsFilter = metav1.NamespaceAll
+	}
 	pc.podIndexer, pc.podController = cache.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
