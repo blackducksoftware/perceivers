@@ -102,14 +102,7 @@ func (pd *PodDumper) getAllPodsAsPerceptorPods() ([]perceptorapi.Pod, error) {
 	// Get all pods from kubernetes
 	getPodsStart := time.Now()
 
-	listOptions := func() metav1.ListOptions {
-		lo := metav1.ListOptions{}
-		if len(pd.filter) > 0 {
-			lo.LabelSelector = pd.filter
-		}
-		return lo
-	}()
-	pods, err := pd.coreV1.Pods(metav1.NamespaceAll).List(listOptions)
+	pods, err := pd.coreV1.Pods(pd.filter).List(metav1.ListOptions{})
 	metrics.RecordDuration("get pods", time.Now().Sub(getPodsStart))
 	if err != nil {
 		return nil, err
