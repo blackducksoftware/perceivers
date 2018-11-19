@@ -27,6 +27,7 @@ import (
 
 	"github.com/blackducksoftware/perceivers/cmd/image-perceiver/app"
 	"github.com/blackducksoftware/perceivers/pkg/annotations"
+	"github.com/blackducksoftware/perceivers/pkg/metrics"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -35,6 +36,7 @@ func main() {
 	log.Info("starting image-perceiver")
 	configPath := os.Args[1]
 	log.Printf("Config path: %s", configPath)
+	metrics.InitMetrics("image_perceiver")
 	handler := annotations.ImageAnnotatorHandlerFuncs{
 		ImageLabelCreationFunc:      annotations.CreateImageLabels,
 		ImageAnnotationCreationFunc: annotations.CreateImageAnnotations,
