@@ -38,33 +38,41 @@ var totalPodsAnnotated *prometheus.CounterVec
 
 // RecordError records metric information related to errors
 func RecordError(errorStage string, errorName string) {
+	InitMetrics("test")
 	errorsCounter.With(prometheus.Labels{"stage": errorStage, "errorName": errorName}).Inc()
 }
 
 // RecordDuration records the duration of an operation
 func RecordDuration(operation string, duration time.Duration) {
+	InitMetrics("test")
 	durationsHistogram.With(prometheus.Labels{"operation": operation}).Observe(duration.Seconds())
 }
 
 // RecordHTTPStats records metric information related to http requests
 func RecordHTTPStats(path string, success bool) {
+	InitMetrics("test")
 	httpResults.With(prometheus.Labels{"path": path, "result": fmt.Sprintf("%t", success)}).Inc()
 }
 
 // RecordImageAnnotation records metric information related to image annotations
 func RecordImageAnnotation(annotator string, imageName string) {
+	InitMetrics("test")
 	imagesAnnotated.With(prometheus.Labels{"annotator": annotator, "image_name": imageName}).Inc()
 	totalImagesAnnotated.With(prometheus.Labels{"annotator": annotator, "images_annotated": "total"}).Inc()
 }
 
 // RecordPodAnnotation records metric information related to pod annotations
 func RecordPodAnnotation(annotator string, podName string) {
+	InitMetrics("test")
 	podsAnnotated.With(prometheus.Labels{"annotator": annotator, "pod_name": podName}).Inc()
 	totalPodsAnnotated.With(prometheus.Labels{"annotator": annotator, "pods_annotated": "total"}).Inc()
 }
 
 // InitMetrics must be called before using any metrics
 func InitMetrics(subsystem string) {
+	if httpResults != nil {
+		return
+	}
 	httpResults = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "perceptor",
