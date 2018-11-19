@@ -63,11 +63,12 @@ func RecordPodAnnotation(annotator string, podName string) {
 	totalPodsAnnotated.With(prometheus.Labels{"annotator": annotator, "pods_annotated": "total"}).Inc()
 }
 
-func init() {
+// InitMetrics must be called before using any metrics
+func InitMetrics(subsystem string) {
 	httpResults = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "perceptor",
-			Subsystem: "image_perceiver",
+			Subsystem: subsystem,
 			Name:      "http_response_status_codes",
 			Help:      "success/failure responses from HTTP requests issued by image perceiver",
 		}, []string{"path", "result"})
@@ -75,7 +76,7 @@ func init() {
 	durationsHistogram = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "perceptor",
-			Subsystem: "image_perceiver",
+			Subsystem: subsystem,
 			Name:      "timings",
 			Help:      "time durations of image perceiver operations",
 			Buckets:   prometheus.ExponentialBuckets(0.0000001, 2, 30),
@@ -84,7 +85,7 @@ func init() {
 	errorsCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "perceptor",
-			Subsystem: "image_perceiver",
+			Subsystem: subsystem,
 			Name:      "errors",
 			Help:      "errors from image perceiver operations",
 		}, []string{"stage", "errorName"})
@@ -92,32 +93,32 @@ func init() {
 	imagesAnnotated = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "perceptor",
-			Subsystem: "image_perceiver",
-			Name:      "annotations",
+			Subsystem: subsystem,
+			Name:      "image_annotations",
 			Help:      "individual image annotations",
 		}, []string{"annotator", "image_name"})
 
 	totalImagesAnnotated = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "perceptor",
-			Subsystem: "image_perceiver",
-			Name:      "total_annotations",
+			Subsystem: subsystem,
+			Name:      "total_image_annotations",
 			Help:      "total images annotated",
 		}, []string{"annotator", "images_annotated"})
 
 	podsAnnotated = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "perceptor",
-			Subsystem: "pod_perceiver",
-			Name:      "annotations",
+			Subsystem: subsystem,
+			Name:      "pod_annotations",
 			Help:      "individual pod annotations",
 		}, []string{"annotator", "pod_name"})
 
 	totalPodsAnnotated = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "perceptor",
-			Subsystem: "pod_perceiver",
-			Name:      "total_annotations",
+			Subsystem: subsystem,
+			Name:      "total_pod_annotations",
 			Help:      "total pods annotated",
 		}, []string{"annotator", "pods_annotated"})
 
