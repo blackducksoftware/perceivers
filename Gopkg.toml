@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/blackducksoftware/perceptor"
-  version = "v2.2.0"
+  version = "v2.2.1"
 
 [[constraint]]
   name = "github.com/fsnotify/fsnotify"
