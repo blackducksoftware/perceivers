@@ -10,12 +10,12 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
-  digest = "1:622d4d2198c61775bd4943acecbe3a20fab797f206cd3bd6b1aa703f8e08dcc8"
+  digest = "1:e19483b251e1f4685ed4cb1efdb272eb877d6adb0bb4a238d6771709f7d340e5"
   name = "github.com/blackducksoftware/perceptor"
   packages = ["pkg/api"]
   pruneopts = "UT"
-  revision = "d65fca6cb72dbc3cc04df06308cfb64bc3246cb8"
-  version = "v2.2.1"
+  revision = "5018172e4ccee86475597bfcce7bf55f09d1b900"
+  version = "v2.2.2"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
