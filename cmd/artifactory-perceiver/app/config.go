@@ -1,0 +1,85 @@
+package app
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/blackducksoftware/perceivers/pkg/utils"
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
+)
+
+// PerceptorConfig contains Perceptor config
+type PerceptorConfig struct {
+	Host string
+	Port int
+}
+
+// PerceiverConfig contains general Perceiver config
+type PerceiverConfig struct {
+	AnnotationIntervalSeconds int
+	DumpIntervalMinutes       int
+	Port                      int
+}
+
+// Config return the Artifactory Perceiver configurations
+type Config struct {
+	Perceptor               PerceptorConfig
+	Perceiver               PerceiverConfig
+	PrivateDockerRegistries []*utils.ArtifactoryCredentials
+}
+
+// GetConfig returns a configuration object to configure a ImagePerceiver
+func GetConfig(configPath string) (*Config, error) {
+	var cfg *Config
+
+	viper.SetConfigFile(configPath)
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %v", err)
+	}
+
+	err = viper.Unmarshal(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
+	}
+
+	err = cfg.getPrivateDockerRegistries()
+	if err != nil {
+		return nil, fmt.Errorf("failed to find private docker repo credentials: %v", err)
+	}
+
+	return cfg, nil
+}
+
+// StartWatch will start watching the ImagePerceiver configuration file and
+// call the passed handler function when the configuration file has changed
+func (config *Config) StartWatch(handler func(fsnotify.Event)) {
+	viper.WatchConfig()
+	viper.OnConfigChange(handler)
+}
+
+// getPrivateDockerRegistries will get the private Docker registries credential
+func (config *Config) getPrivateDockerRegistries() error {
+	credentials, ok := os.LookupEnv("securedRegistries.json")
+	if !ok {
+		return fmt.Errorf("cannot find Private Docker Registries: environment variable securedRegistries not found")
+	}
+
+	privateDockerRegistries := map[string]*utils.ArtifactoryCredentials{}
+	err := json.Unmarshal([]byte(credentials), &privateDockerRegistries)
+	if err != nil {
+		return fmt.Errorf("unable to unmarshall Private Docker registries due to %+v", err)
+	}
+
+	dockerRegistries := []*utils.ArtifactoryCredentials{}
+	for _, privatedockerRegistry := range privateDockerRegistries {
+		dockerRegistries = append(dockerRegistries, privatedockerRegistry)
+	}
+
+	config.PrivateDockerRegistries = dockerRegistries
+
+	return nil
+}
