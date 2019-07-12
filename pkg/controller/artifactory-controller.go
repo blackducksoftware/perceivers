@@ -1,3 +1,24 @@
+/*
+Copyright (C) 2019 Synopsys, Inc.
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+
 package controller
 
 import (
@@ -39,26 +60,11 @@ type ImageTags struct {
 	Tags []string `json:"tags"`
 }
 
-// ImageMetadata gets the info about the image
-type ImageMetadata struct {
-	Repo         string `json:"repo"`
-	Path         string `json:"path"`
-	Created      string `json:"created"`
-	CreatedBy    string `json:"createdBy"`
-	LastModified string `json:"lastModified"`
-	ModifiedBy   string `json:"modifiedBy"`
-	LastUpdated  string `json:"lastUpdated"`
-	DownloadURI  string `json:"downloadUri"`
-	MimeType     string `json:"mimeType"`
-	Size         string `json:"size"`
-	Checksums    struct {
-		Sha1   string `json:"sha1"`
-		Md5    string `json:"md5"`
-		Sha256 string `json:"sha256"`
-	} `json:"checksums"`
-	OriginalChecksums struct {
-		Sha256 string `json:"sha256"`
-	} `json:"originalChecksums"`
+// ImageSHAs gets all the sha256 of an image
+type ImageSHAs struct {
+	Properties struct {
+		Sha256 []string `json:"sha256"`
+	} `json:"properties"`
 	URI string `json:"uri"`
 }
 
@@ -102,7 +108,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 		dockerRepos := &DockerRepo{}
 		images := &Images{}
 		imageTags := &ImageTags{}
-		imageMetadata := &ImageMetadata{}
+		imageSHAs := &ImageSHAs{}
 
 		url := fmt.Sprintf("%s/artifactory/api/repositories?packageType=docker", baseURL)
 		err = utils.GetResourceOfType(url, cred, dockerRepos)
@@ -128,36 +134,39 @@ func (ic *ArtifactoryController) imageLookup() error {
 				}
 
 				for _, tag := range imageTags.Tags {
-					url = fmt.Sprintf("%s/artifactory/api/storage/%s/%s/%s/manifest.json", baseURL, repo.Key, image, tag)
-					err = utils.GetResourceOfType(url, cred, imageMetadata)
+					url = fmt.Sprintf("%s/artifactory/api/storage/%s/%s/%s/manifest.json?properties=sha256", baseURL, repo.Key, image, tag)
+					err = utils.GetResourceOfType(url, cred, imageSHAs)
 					if err != nil {
-						log.Errorf("Error in getting metadata: %e", err)
+						log.Errorf("Error in getting SHAs of the image: %e", err)
 						break
 					}
 
-					url = fmt.Sprintf("%s/%s:%s", baseURL, image, tag)
-					log.Infof("URL: %s", url)
-					log.Infof("Tag: %s", tag)
-					log.Infof("SHA: %s", imageMetadata.OriginalChecksums.Sha256)
-					log.Infof("Priority: %d", 1)
-					log.Infof("BlackDuckProjectName: %s", image)
-					log.Infof("BlackDuckProjectVersion: %s", tag)
+					for _, sha := range imageSHAs.Properties.Sha256 {
 
-					sha, err := m.NewDockerImageSha(imageMetadata.OriginalChecksums.Sha256)
-					if err != nil {
-						log.Errorf("Error in docker SHA: %e", err)
-					} else {
+						url = fmt.Sprintf("%s/%s:%s", baseURL, image, tag)
+						log.Infof("URL: %s", url)
+						log.Infof("Tag: %s", tag)
+						log.Infof("SHA: %s", sha)
+						log.Infof("Priority: %d", 1)
+						log.Infof("BlackDuckProjectName: %s", image)
+						log.Infof("BlackDuckProjectVersion: %s", tag)
 
-						// Remove Tag & HTTPS because image model doesn't require it
-						url = fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
-						artImage := m.NewImage(url, tag, sha, 0, image, tag)
-						ic.putImageOnScanQueue(artImage, cred)
+						sha, err := m.NewDockerImageSha(sha)
+						if err != nil {
+							log.Errorf("Error in docker SHA: %e", err)
+						} else {
+
+							// Remove Tag & HTTPS because image model doesn't require it
+							url = fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
+							artImage := m.NewImage(url, tag, sha, 0, image, tag)
+							ic.putImageOnScanQueue(artImage, cred)
+						}
 					}
 				}
 			}
 		}
 
-		log.Infof("There were total %d images found in artifactory.", len(images.Repositories))
+		log.Infof("There were total %d docker repositories found in artifactory.", len(images.Repositories))
 
 	}
 
