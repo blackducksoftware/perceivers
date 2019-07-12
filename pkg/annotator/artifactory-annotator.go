@@ -119,10 +119,10 @@ func (ia *ArtifactoryAnnotator) getScanResults() (*perceptorapi.ScanResults, err
 }
 
 func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults) {
-	log.Infof("Total Private Registries: %d", len(ia.registryAuths))
-	for _, registry := range ia.registryAuths {
+	regs := 0
 
-		log.Infof("Total images in Artifactory with URL %s: %d", registry.URL, len(results.Images))
+	for _, registry := range ia.registryAuths {
+		imgs := 0
 		for _, image := range results.Images {
 
 			baseURL := fmt.Sprintf("https://%s", registry.URL)
@@ -133,6 +133,7 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 				break
 			}
 
+			regs = regs + 1
 			repos := &ReposBySha{}
 			// Look for SHA
 			url := fmt.Sprintf("%s/artifactory/api/search/checksum?sha256=%s", baseURL, image.Sha)
@@ -142,14 +143,19 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 				break
 			}
 
-			log.Infof("Total Repos for image %s: %d", image.Repository, len(repos.Results))
+			imgs = imgs + 1
+			log.Debugf("Total Repos for image %s in artifactory: %d", image.Repository, len(repos.Results))
 			for _, repo := range repos.Results {
 				uri := strings.Replace(repo.URI, "/manifest.json", "", -1)
 				ia.AnnotateImage(uri, &image, cred)
 			}
 
 		}
+
+		log.Infof("Total images in Artifactory with URL %s: %d", registry.URL, imgs)
 	}
+
+	log.Infof("Total valid Artifactory Registries: %d", regs)
 }
 
 // AnnotateImage takes the specific Artifactory URL and applies the properties/annotations given by BD
