@@ -148,7 +148,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 						log.Infof("Tag: %s", tag)
 						log.Infof("SHA: %s", sha)
 						log.Infof("Priority: %d", 1)
-						log.Infof("BlackDuckProjectName: %s", image)
+						log.Infof("BlackDuckProjectName: %s/%s/%s", registry.URL, repo.Key, image)
 						log.Infof("BlackDuckProjectVersion: %s", tag)
 
 						sha, err := m.NewDockerImageSha(sha)
@@ -158,7 +158,8 @@ func (ic *ArtifactoryController) imageLookup() error {
 
 							// Remove Tag & HTTPS because image model doesn't require it
 							url = fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
-							artImage := m.NewImage(url, tag, sha, 0, image, tag)
+							projectName := fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
+							artImage := m.NewImage(url, tag, sha, 0, projectName, tag)
 							ic.putImageOnScanQueue(artImage, cred)
 						}
 					}
