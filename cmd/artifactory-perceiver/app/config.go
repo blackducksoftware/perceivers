@@ -48,7 +48,7 @@ type PerceiverConfig struct {
 type Config struct {
 	Perceptor               PerceptorConfig
 	Perceiver               PerceiverConfig
-	PrivateDockerRegistries []*utils.ArtifactoryCredentials
+	PrivateDockerRegistries []*utils.RegistryAuth
 }
 
 // GetConfig returns a configuration object to configure a ImagePerceiver
@@ -89,13 +89,13 @@ func (config *Config) getPrivateDockerRegistries() error {
 		return fmt.Errorf("cannot find Private Docker Registries: environment variable securedRegistries not found")
 	}
 
-	privateDockerRegistries := map[string]*utils.ArtifactoryCredentials{}
+	privateDockerRegistries := map[string]*utils.RegistryAuth{}
 	err := json.Unmarshal([]byte(credentials), &privateDockerRegistries)
 	if err != nil {
 		return fmt.Errorf("unable to unmarshall Private Docker registries due to %+v", err)
 	}
 
-	dockerRegistries := []*utils.ArtifactoryCredentials{}
+	dockerRegistries := []*utils.RegistryAuth{}
 	for _, privatedockerRegistry := range privateDockerRegistries {
 		dockerRegistries = append(dockerRegistries, privatedockerRegistry)
 	}

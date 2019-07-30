@@ -22,10 +22,7 @@ under the License.
 package controller
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	utils "github.com/blackducksoftware/perceivers/pkg/utils"
@@ -38,7 +35,7 @@ import (
 // ArtifactoryController handles watching images and sending them to perceptor
 type ArtifactoryController struct {
 	perceptorURL  string
-	registryAuths []*utils.ArtifactoryCredentials
+	registryAuths []*utils.RegistryAuth
 }
 
 // DockerRepo contains list of docker repos in artifactory
@@ -69,7 +66,7 @@ type ImageSHAs struct {
 }
 
 // NewArtifactoryController creates a new ArtifactoryController object
-func NewArtifactoryController(perceptorURL string, credentials []*utils.ArtifactoryCredentials) *ArtifactoryController {
+func NewArtifactoryController(perceptorURL string, credentials []*utils.RegistryAuth) *ArtifactoryController {
 	return &ArtifactoryController{
 		perceptorURL:  perceptorURL,
 		registryAuths: credentials,
@@ -160,7 +157,12 @@ func (ic *ArtifactoryController) imageLookup() error {
 							url = fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
 							projectName := fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
 							artImage := m.NewImage(url, tag, sha, 0, projectName, tag)
-							ic.putImageOnScanQueue(artImage, cred)
+
+							perceptorURL := fmt.Sprintf("%s/%s", ic.perceptorURL, perceptorapi.ImagePath)
+							err := utils.PutImageOnScanQueue(perceptorURL, artImage, cred)
+							if err != nil {
+								log.Errorf("Error putting image %v in perceptor queue %e", artImage, err)
+							}
 						}
 					}
 				}
@@ -172,28 +174,4 @@ func (ic *ArtifactoryController) imageLookup() error {
 	}
 
 	return nil
-}
-
-func (ic *ArtifactoryController) putImageOnScanQueue(im *m.Image, cred *utils.ArtifactoryCredentials) {
-	buffer := new(bytes.Buffer)
-	json.NewEncoder(buffer).Encode(im)
-	url := fmt.Sprintf("%s/%s", ic.perceptorURL, perceptorapi.ImagePath)
-	req, err := http.NewRequest(http.MethodPost, url, buffer)
-	if err != nil {
-		log.Errorf("Error in creating post request %e", err)
-	}
-	req.SetBasicAuth(cred.User, cred.Password)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Errorf("Error in sending request %e", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusOK {
-		log.Infof("Success in posting image to the queue")
-	} else {
-		log.Errorf("OK status code not observer from perceptor, status code: %d", resp.StatusCode)
-	}
 }

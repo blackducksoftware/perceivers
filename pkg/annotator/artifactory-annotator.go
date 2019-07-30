@@ -54,11 +54,11 @@ type ReposBySha struct {
 // ArtifactoryAnnotator handles annotating artifactory images with vulnerability and policy issues
 type ArtifactoryAnnotator struct {
 	scanResultsURL string
-	registryAuths  []*utils.ArtifactoryCredentials
+	registryAuths  []*utils.RegistryAuth
 }
 
 // NewArtifactoryAnnotator creates a new ArtifactoryAnnotator object
-func NewArtifactoryAnnotator(perceptorURL string, registryAuths []*utils.ArtifactoryCredentials) *ArtifactoryAnnotator {
+func NewArtifactoryAnnotator(perceptorURL string, registryAuths []*utils.RegistryAuth) *ArtifactoryAnnotator {
 	return &ArtifactoryAnnotator{
 		scanResultsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ScanResultsPath),
 		registryAuths:  registryAuths,
@@ -159,7 +159,7 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 }
 
 // AnnotateImage takes the specific Artifactory URL and applies the properties/annotations given by BD
-func (ia *ArtifactoryAnnotator) AnnotateImage(uri string, im *perceptorapi.ScannedImage, cred *utils.ArtifactoryCredentials) {
+func (ia *ArtifactoryAnnotator) AnnotateImage(uri string, im *perceptorapi.ScannedImage, cred *utils.RegistryAuth) {
 	log.Infof("Annotating image %s with URI %s", im.Repository, uri)
 	url := fmt.Sprintf("%s?properties=%s=%s;%s=%d;%s=%d;%s=%s;", uri, bdSt, im.OverallStatus, bdVuln, im.Vulnerabilities, bdPolicy, im.PolicyViolations, bdComp, im.ComponentsURL)
 	req, err := http.NewRequest(http.MethodPut, url, nil)

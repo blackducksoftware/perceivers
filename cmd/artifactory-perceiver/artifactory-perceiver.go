@@ -40,7 +40,7 @@ func main() {
 	// Create the Artifactory Perceiver
 	perceiver, err := app.NewArtifactoryPerceiver(configPath)
 	if err != nil {
-		panic(fmt.Errorf("failed to create image-perceiver: %v", err))
+		panic(fmt.Errorf("failed to create artifactory-perceiver: %v", err))
 	}
 
 	// Run the perceiver
