@@ -67,7 +67,7 @@ func NewArtifactoryAnnotator(perceptorURL string, registryAuths []*utils.Registr
 
 // Run starts a controller that will annotate images
 func (ia *ArtifactoryAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
-	log.Infof("starting image annotator controller")
+	log.Infof("starting artifactory annotator controller")
 
 	for {
 		select {
@@ -87,15 +87,15 @@ func (ia *ArtifactoryAnnotator) Run(interval time.Duration, stopCh <-chan struct
 
 func (ia *ArtifactoryAnnotator) annotate() error {
 	// Get all the scan results from the Perceptor
-	log.Infof("attempting to GET %s for image annotation", ia.scanResultsURL)
+	log.Infof("attempting to GET %s for artifactory image annotation", ia.scanResultsURL)
 	scanResults, err := ia.getScanResults()
 	if err != nil {
-		metrics.RecordError("image_annotator", "error getting scan results")
+		metrics.RecordError("artifactory_annotator", "error getting scan results")
 		return fmt.Errorf("error getting scan results: %v", err)
 	}
 
 	// Process the scan results and apply annotations/labels to images
-	log.Infof("GET to %s succeeded, about to update annotations on all images", ia.scanResultsURL)
+	log.Infof("GET to %s succeeded, about to update annotations on all artifactory images", ia.scanResultsURL)
 	ia.addAnnotationsToImages(*scanResults)
 	return nil
 }
@@ -105,13 +105,13 @@ func (ia *ArtifactoryAnnotator) getScanResults() (*perceptorapi.ScanResults, err
 
 	bytes, err := communicator.GetPerceptorScanResults(ia.scanResultsURL)
 	if err != nil {
-		metrics.RecordError("image_annotator", "unable to get scan results")
+		metrics.RecordError("artifactory_annotator", "unable to get scan results")
 		return nil, fmt.Errorf("unable to get scan results: %v", err)
 	}
 
 	err = json.Unmarshal(bytes, &results)
 	if err != nil {
-		metrics.RecordError("image_annotator", "unable to Unmarshal ScanResults")
+		metrics.RecordError("artifactory_annotator", "unable to Unmarshal ScanResults")
 		return nil, fmt.Errorf("unable to Unmarshal ScanResults from url %s: %v", ia.scanResultsURL, err)
 	}
 
@@ -137,7 +137,7 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 			repos := &ReposBySha{}
 			// Look for SHA
 			url := fmt.Sprintf("%s/artifactory/api/search/checksum?sha256=%s", baseURL, image.Sha)
-			err = utils.GetResourceOfType(url, cred, repos)
+			err = utils.GetResourceOfType(url, cred, "", repos)
 			if err != nil {
 				log.Errorf("Error in getting docker repo: %e", err)
 				break
@@ -160,7 +160,7 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 
 // AnnotateImage takes the specific Artifactory URL and applies the properties/annotations given by BD
 func (ia *ArtifactoryAnnotator) AnnotateImage(uri string, im *perceptorapi.ScannedImage, cred *utils.RegistryAuth) {
-	log.Infof("Annotating image %s with URI %s", im.Repository, uri)
+	log.Infof("Annotating image in artifactory %s with URI %s", im.Repository, uri)
 	url := fmt.Sprintf("%s?properties=%s=%s;%s=%d;%s=%d;%s=%s;", uri, bdSt, im.OverallStatus, bdVuln, im.Vulnerabilities, bdPolicy, im.PolicyViolations, bdComp, im.ComponentsURL)
 	req, err := http.NewRequest(http.MethodPut, url, nil)
 	if err != nil {
