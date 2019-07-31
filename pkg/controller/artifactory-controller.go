@@ -65,6 +65,7 @@ func (ic *ArtifactoryController) Run(interval time.Duration, stopCh <-chan struc
 }
 
 func (ic *ArtifactoryController) imageLookup() error {
+	log.Infof("Total %d private registries found!", len(ic.registryAuths))
 	for _, registry := range ic.registryAuths {
 
 		baseURL := fmt.Sprintf("https://%s", registry.URL)
@@ -112,14 +113,6 @@ func (ic *ArtifactoryController) imageLookup() error {
 
 					for _, sha := range imageSHAs.Properties.Sha256 {
 
-						url = fmt.Sprintf("%s/%s:%s", baseURL, image, tag)
-						log.Infof("URL: %s", url)
-						log.Infof("Tag: %s", tag)
-						log.Infof("SHA: %s", sha)
-						log.Infof("Priority: %d", 1)
-						log.Infof("BlackDuckProjectName: %s/%s/%s", registry.URL, repo.Key, image)
-						log.Infof("BlackDuckProjectVersion: %s", tag)
-
 						sha, err := m.NewDockerImageSha(sha)
 						if err != nil {
 							log.Errorf("Error in docker SHA: %e", err)
@@ -127,8 +120,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 
 							// Remove Tag & HTTPS because image model doesn't require it
 							url = fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
-							projectName := fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
-							artImage := m.NewImage(url, tag, sha, 1, projectName, tag)
+							artImage := m.NewImage(url, tag, sha, 1, url, tag)
 
 							err := utils.PutImageOnScanQueue(ic.perceptorURL, artImage)
 							if err != nil {
