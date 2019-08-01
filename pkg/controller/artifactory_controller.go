@@ -65,14 +65,14 @@ func (ic *ArtifactoryController) Run(interval time.Duration, stopCh <-chan struc
 }
 
 func (ic *ArtifactoryController) imageLookup() error {
-	log.Infof("Total %d private registries found!", len(ic.registryAuths))
+	log.Infof("Total %d private registries credentials found!", len(ic.registryAuths))
 	for _, registry := range ic.registryAuths {
 
 		baseURL := fmt.Sprintf("https://%s", registry.URL)
 		cred, err := utils.PingArtifactoryServer(baseURL, registry.User, registry.Password)
 		if err != nil {
 			log.Warnf("Controller: URL %s either not a valid Artifactory repository or incorrect credentials: %e", baseURL, err)
-			break
+			continue
 		}
 
 		dockerRepos := &utils.ArtDockerRepo{}
@@ -84,7 +84,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 		err = utils.GetResourceOfType(url, cred, "", dockerRepos)
 		if err != nil {
 			log.Errorf("Error in getting docker repo: %e", err)
-			break
+			continue
 		}
 
 		for _, repo := range *dockerRepos {
@@ -92,7 +92,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 			err = utils.GetResourceOfType(url, cred, "", images)
 			if err != nil {
 				log.Errorf("Error in getting catalog in repo: %e", err)
-				break
+				continue
 			}
 
 			for _, image := range images.Repositories {
@@ -100,7 +100,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 				err = utils.GetResourceOfType(url, cred, "", imageTags)
 				if err != nil {
 					log.Errorf("Error in getting image: %e", err)
-					break
+					continue
 				}
 
 				for _, tag := range imageTags.Tags {
@@ -108,7 +108,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 					err = utils.GetResourceOfType(url, cred, "", imageSHAs)
 					if err != nil {
 						log.Errorf("Error in getting SHAs of the artifactory image: %e", err)
-						break
+						continue
 					}
 
 					for _, sha := range imageSHAs.Properties.Sha256 {
@@ -126,7 +126,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 							if err != nil {
 								log.Errorf("Error putting artifactory image %v in perceptor queue %e", artImage, err)
 							} else {
-								log.Infof("Successfully put image %s in perceptor queue", url, tag)
+								log.Infof("Successfully put image %s with tag %s in perceptor queue", url, tag)
 							}
 						}
 					}

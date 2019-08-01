@@ -122,25 +122,25 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 	regs := 0
 
 	for _, registry := range ia.registryAuths {
+
+		baseURL := fmt.Sprintf("https://%s", registry.URL)
+		cred, err := utils.PingArtifactoryServer(baseURL, registry.User, registry.Password)
+
+		if err != nil {
+			log.Warnf("Annotator: URL %s either not a valid Artifactory repository or incorrect credentials: %e", baseURL, err)
+			continue
+		}
+		regs = regs + 1
 		imgs := 0
 		for _, image := range results.Images {
 
-			baseURL := fmt.Sprintf("https://%s", registry.URL)
-			cred, err := utils.PingArtifactoryServer(baseURL, registry.User, registry.Password)
-
-			if err != nil {
-				log.Warnf("Annotator: URL %s either not a valid Artifactory repository or incorrect credentials: %e", baseURL, err)
-				break
-			}
-
-			regs = regs + 1
 			repos := &ReposBySha{}
 			// Look for SHA
 			url := fmt.Sprintf("%s/artifactory/api/search/checksum?sha256=%s", baseURL, image.Sha)
 			err = utils.GetResourceOfType(url, cred, "", repos)
 			if err != nil {
 				log.Errorf("Error in getting docker repo: %e", err)
-				break
+				continue
 			}
 
 			imgs = imgs + 1

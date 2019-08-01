@@ -33,13 +33,6 @@ import (
 
 func webhook(bearerToken string, perceptorURL string, qr *utils.QuayRepo) {
 
-	log.Info(qr.Name)
-	log.Info(qr.Repository)
-	log.Info(qr.Namespace)
-	log.Info(qr.DockerURL)
-	log.Info(qr.Homepage)
-	log.Info(qr.UpdatedTags)
-
 	rt := &utils.QuayTagDigest{}
 	url := strings.Replace(qr.Homepage, "repository", "api/v1/repository", -1)
 	url = fmt.Sprintf("%s/tag", url)

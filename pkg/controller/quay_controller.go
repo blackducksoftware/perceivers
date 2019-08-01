@@ -69,6 +69,5 @@ func (qc *QuayController) Run(interval time.Duration, stopCh <-chan struct{}) {
 
 func (qc *QuayController) imageLookup() error {
 
-	
 	return nil
 }
