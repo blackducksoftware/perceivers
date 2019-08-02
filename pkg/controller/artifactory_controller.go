@@ -71,7 +71,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 		baseURL := fmt.Sprintf("https://%s", registry.URL)
 		cred, err := utils.PingArtifactoryServer(baseURL, registry.User, registry.Password)
 		if err != nil {
-			log.Warnf("Controller: URL %s either not a valid Artifactory repository or incorrect credentials: %e", baseURL, err)
+			log.Debugf("Controller: URL %s either not a valid Artifactory repository or incorrect credentials: %e", baseURL, err)
 			continue
 		}
 
@@ -80,7 +80,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 		imageTags := &utils.ArtImageTags{}
 		imageSHAs := &utils.ArtImageSHAs{}
 
-		url := fmt.Sprintf("%s/artifactory/api/repositories?packageType=docker", baseURL)
+		url := fmt.Sprintf("%s/api/repositories?packageType=docker", baseURL)
 		err = utils.GetResourceOfType(url, cred, "", dockerRepos)
 		if err != nil {
 			log.Errorf("Error in getting docker repo: %e", err)
@@ -88,7 +88,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 		}
 
 		for _, repo := range *dockerRepos {
-			url = fmt.Sprintf("%s/artifactory/api/docker/%s/v2/_catalog", baseURL, repo.Key)
+			url = fmt.Sprintf("%s/api/docker/%s/v2/_catalog", baseURL, repo.Key)
 			err = utils.GetResourceOfType(url, cred, "", images)
 			if err != nil {
 				log.Errorf("Error in getting catalog in repo: %e", err)
@@ -96,7 +96,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 			}
 
 			for _, image := range images.Repositories {
-				url = fmt.Sprintf("%s/artifactory/api/docker/%s/v2/%s/tags/list", baseURL, repo.Key, image)
+				url = fmt.Sprintf("%s/api/docker/%s/v2/%s/tags/list", baseURL, repo.Key, image)
 				err = utils.GetResourceOfType(url, cred, "", imageTags)
 				if err != nil {
 					log.Errorf("Error in getting image: %e", err)
@@ -104,7 +104,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 				}
 
 				for _, tag := range imageTags.Tags {
-					url = fmt.Sprintf("%s/artifactory/api/storage/%s/%s/%s/manifest.json?properties=sha256", baseURL, repo.Key, image, tag)
+					url = fmt.Sprintf("%s/api/storage/%s/%s/%s/manifest.json?properties=sha256", baseURL, repo.Key, image, tag)
 					err = utils.GetResourceOfType(url, cred, "", imageSHAs)
 					if err != nil {
 						log.Errorf("Error in getting SHAs of the artifactory image: %e", err)

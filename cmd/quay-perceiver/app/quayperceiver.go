@@ -61,7 +61,7 @@ func NewQuayPerceiver(configPath string) (*QuayPerceiver, error) {
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.Perceptor.Host, config.Perceptor.Port)
 	qp := QuayPerceiver{
 		controller:         controller.NewQuayController(perceptorURL, config.PrivateDockerRegistries, config.QuayAccessToken),
-		annotator:          annotator.NewQuayAnnotator(perceptorURL, config.PrivateDockerRegistries),
+		annotator:          annotator.NewQuayAnnotator(perceptorURL, config.PrivateDockerRegistries, config.QuayAccessToken),
 		annotationInterval: time.Second * time.Duration(config.Perceiver.AnnotationIntervalSeconds),
 		dumpInterval:       time.Minute * time.Duration(config.Perceiver.DumpIntervalMinutes),
 		quayAccessToken:    config.QuayAccessToken,

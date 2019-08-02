@@ -44,13 +44,6 @@ const (
 	bdComp   = "blackduck.componentsURL"
 )
 
-// ReposBySha collects URIs for given SHA256
-type ReposBySha struct {
-	Results []struct {
-		URI string `json:"uri"`
-	} `json:"results"`
-}
-
 // ArtifactoryAnnotator handles annotating artifactory images with vulnerability and policy issues
 type ArtifactoryAnnotator struct {
 	scanResultsURL string
@@ -127,27 +120,31 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 		cred, err := utils.PingArtifactoryServer(baseURL, registry.User, registry.Password)
 
 		if err != nil {
-			log.Warnf("Annotator: URL %s either not a valid Artifactory repository or incorrect credentials: %e", baseURL, err)
+			log.Debugf("Annotator: URL %s either not a valid Artifactory repository or incorrect credentials: %e", baseURL, err)
 			continue
 		}
 		regs = regs + 1
 		imgs := 0
 		for _, image := range results.Images {
 
-			repos := &ReposBySha{}
+			if registry.URL != strings.Split(image.Repository, "/")[0] {
+				continue
+			}
+
+			repos := &utils.ArtReposBySha{}
 			// Look for SHA
-			url := fmt.Sprintf("%s/artifactory/api/search/checksum?sha256=%s", baseURL, image.Sha)
+			url := fmt.Sprintf("%s/api/search/checksum?sha256=%s", baseURL, image.Sha)
 			err = utils.GetResourceOfType(url, cred, "", repos)
 			if err != nil {
 				log.Errorf("Error in getting docker repo: %e", err)
 				continue
 			}
 
-			imgs = imgs + 1
 			log.Debugf("Total Repos for image %s in artifactory: %d", image.Repository, len(repos.Results))
 			for _, repo := range repos.Results {
 				uri := strings.Replace(repo.URI, "/manifest.json", "", -1)
 				ia.AnnotateImage(uri, &image, cred)
+				imgs = imgs + 1
 			}
 
 		}

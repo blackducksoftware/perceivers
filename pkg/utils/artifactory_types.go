@@ -47,3 +47,10 @@ type ArtImageSHAs struct {
 	} `json:"properties"`
 	URI string `json:"uri"`
 }
+
+// ArtReposBySha collects URIs for given SHA256
+type ArtReposBySha struct {
+	Results []struct {
+		URI string `json:"uri"`
+	} `json:"results"`
+}

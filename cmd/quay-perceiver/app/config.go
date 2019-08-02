@@ -64,14 +64,14 @@ func GetConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
 	}
 
+	viper.SetEnvPrefix("AT")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.BindEnv("QuayAccessToken")
+
 	err = viper.Unmarshal(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
 	}
-
-	viper.SetEnvPrefix("AT")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.BindEnv("QuayAccessToken")
 
 	err = cfg.getPrivateDockerRegistries()
 	if err != nil {

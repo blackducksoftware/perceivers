@@ -24,6 +24,7 @@ package annotator
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
@@ -39,26 +40,28 @@ const (
 	quayBDPolicy = "blackduck.policyviolations"
 	quayBDVuln   = "blackduck.vulnerabilities"
 	quayBDSt     = "blackduck.overallstatus"
-	quayBDComp   = "blackduck.componentsurl"
+	quayBDComURL = "blackduck.componentsurl"
 )
 
 // QuayAnnotator handles annotating quay images with vulnerability and policy issues
 type QuayAnnotator struct {
-	scanResultsURL string
-	registryAuths  []*utils.RegistryAuth
+	scanResultsURL  string
+	registryAuths   []*utils.RegistryAuth
+	quayAccessToken string
 }
 
 // NewQuayAnnotator creates a new ArtifactoryAnnotator object
-func NewQuayAnnotator(perceptorURL string, registryAuths []*utils.RegistryAuth) *QuayAnnotator {
+func NewQuayAnnotator(perceptorURL string, registryAuths []*utils.RegistryAuth, quayAccessToken string) *QuayAnnotator {
 	return &QuayAnnotator{
-		scanResultsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ScanResultsPath),
-		registryAuths:  registryAuths,
+		scanResultsURL:  fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ScanResultsPath),
+		registryAuths:   registryAuths,
+		quayAccessToken: quayAccessToken,
 	}
 }
 
 // Run starts a controller that will annotate images
 func (qa *QuayAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
-	log.Infof("starting quay annotator controller")
+	log.Infof("starting quay annotation controller")
 
 	for {
 		select {
@@ -110,10 +113,92 @@ func (qa *QuayAnnotator) getScanResults() (*perceptorapi.ScanResults, error) {
 }
 
 func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults) {
+	regs := 0
+	imgs := 0
 
+	for _, registry := range qa.registryAuths {
+		baseURL := fmt.Sprintf("https://%s", registry.URL)
+		err := utils.PingQuayServer(baseURL, qa.quayAccessToken)
+
+		if err != nil {
+			log.Warnf("Annotator: URL %s either not a valid quay repository or incorrect token: %e", baseURL, err)
+			continue
+		}
+
+		regs = regs + 1
+		for _, image := range results.Images {
+
+			if registry.URL != strings.Split(image.Repository, "/")[0] {
+				continue
+			}
+
+			repoSlice := strings.Split(image.Repository, "/")[1:]
+			repo := strings.Join(repoSlice, "/")
+			labelList := &utils.QuayLabels{}
+			// Look for SHA
+			url := fmt.Sprintf("%s/api/v1/repository/%s/manifest/%s/labels", baseURL, repo, fmt.Sprintf("sha256:%s", image.Sha))
+			err = utils.GetResourceOfType(url, nil, qa.quayAccessToken, labelList)
+			if err != nil {
+				log.Errorf("Error in getting labels for repo %s: %e", repo, err)
+				continue
+			}
+
+			imgs = imgs + 1
+
+			// Create a map of BD tags and retrieved values
+			nt := make(map[string]string)
+			nt[quayBDComURL] = image.ComponentsURL
+			nt[quayBDPolicy] = fmt.Sprintf("%d", image.PolicyViolations)
+			nt[quayBDSt] = image.OverallStatus
+			nt[quayBDVuln] = fmt.Sprintf("%d", image.Vulnerabilities)
+
+			// Create a map of Quay tags and retrieved values
+			ot := make(map[string]string)
+			for _, label := range labelList.Labels {
+				ot[label.Key] = label.Value
+			}
+
+			// Merge them with updated BD values
+			tags := utils.MapMerge(ot, nt)
+			for key, value := range tags {
+				// Don't need to touch other tags apart form BD ones
+				if _, ok := nt[key]; ok {
+					qa.UpdateAnnotation(url, key, value)
+				}
+			}
+
+		}
+
+		log.Infof("Total images in Quay with URL %s: %d", registry.URL, imgs)
+	}
+
+	log.Infof("Total valid Quay Registries: %d", regs)
 }
 
-// AnnotateImage takes the specific Quay URL and applies the properties/annotations given by BD
-func (qa *QuayAnnotator) AnnotateImage(uri string, im *perceptorapi.ScannedImage, cred *utils.RegistryAuth) {
+// UpdateAnnotation takes the specific Quay URL and applies the properties/annotations given by BD
+func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue string) {
 
+	filterURL := fmt.Sprintf("%s?filter=%s", url, labelKey)
+	labelList := &utils.QuayLabels{}
+	err := utils.GetResourceOfType(filterURL, nil, qa.quayAccessToken, labelList)
+	if err != nil {
+		log.Errorf("Error in getting labels at URL %s for update: %e", url, err)
+		return
+	}
+
+	for _, label := range labelList.Labels {
+		deleteURL := fmt.Sprintf("%s/%s", url, label.ID)
+		err = utils.DeleteQuayLabel(deleteURL, qa.quayAccessToken, label.ID)
+		if err != nil {
+			log.Errorf("Error in deleting label %s at URL %s: %e", label.Key, deleteURL, err)
+			log.Errorf("Images may contain duplicate labels!")
+		}
+	}
+
+	err = utils.AddQuayLabel(url, qa.quayAccessToken, labelKey, newValue)
+	if err != nil {
+		log.Errorf("Error in adding label %s at URL %s after deleting: %e", labelKey, url, err)
+	}
+
+	log.Errorf("Successfully annotated quay image!")
 }
