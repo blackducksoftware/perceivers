@@ -117,11 +117,10 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 	imgs := 0
 
 	for _, registry := range qa.registryAuths {
-		baseURL := fmt.Sprintf("https://%s", registry.URL)
-		err := utils.PingQuayServer(baseURL, qa.quayAccessToken)
+		auth, err := utils.PingQuayServer("http://"+registry.URL, qa.quayAccessToken)
 
 		if err != nil {
-			log.Warnf("Annotator: URL %s either not a valid quay repository or incorrect token: %e", baseURL, err)
+			log.Debugf("Annotator: URL %s either not a valid quay repository or incorrect token: %e", registry.URL, err)
 			continue
 		}
 
@@ -129,7 +128,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 		for _, image := range results.Images {
 
 			// The base URL may contain /artifactory in thier instance, splitting has no loss
-			if strings.Contains(image.Repository, registry.URL) {
+			if !strings.Contains(image.Repository, registry.URL) {
 				continue
 			}
 
@@ -137,8 +136,8 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 			repo := strings.Join(repoSlice, "/")
 			labelList := &utils.QuayLabels{}
 			// Look for SHA
-			url := fmt.Sprintf("%s/api/v1/repository/%s/manifest/%s/labels", baseURL, repo, fmt.Sprintf("sha256:%s", image.Sha))
-			err = utils.GetResourceOfType(url, nil, qa.quayAccessToken, labelList)
+			url := fmt.Sprintf("%s/api/v1/repository/%s/manifest/%s/labels", auth.URL, repo, fmt.Sprintf("sha256:%s", image.Sha))
+			err = utils.GetResourceOfType(url, nil, auth.Password, labelList)
 			if err != nil {
 				log.Errorf("Error in getting labels for repo %s: %e", repo, err)
 				continue

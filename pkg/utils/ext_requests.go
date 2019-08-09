@@ -120,24 +120,34 @@ func PutImageOnScanQueue(perceptorURL string, im *m.Image) error {
 
 // PingQuayServer takes in the specified URL with access token and checks weather
 // it's a valid token for quay by pinging the server
-func PingQuayServer(url string, accessToken string) error {
+func PingQuayServer(url string, accessToken string) (*RegistryAuth, error) {
 	url = fmt.Sprintf("%s/api/v1/user", url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return fmt.Errorf("Error in creating ping request for quay server %e", err)
+		return nil, fmt.Errorf("Error in creating ping request for quay server %e", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error in pinging quay server %e", err)
+		return nil, fmt.Errorf("Error in pinging quay server %e", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error in pinging quay server supposed to get %d response code got %d", http.StatusOK, resp.StatusCode)
+		// Making sure that http and https both return not OK
+		if strings.Contains(url, "http://") {
+			url = strings.Replace(url, "http://", "https://", -1)
+			// Reset to baseURL
+			url = strings.Replace(url, "/api/v1/user", "", -1)
+			return PingQuayServer(url, accessToken)
+		}
+
+		return nil, fmt.Errorf("Error in pinging quay server supposed to get %d response code got %d", http.StatusOK, resp.StatusCode)
 	}
-	return nil
+
+	// Just filling stuff
+	return &RegistryAuth{URL: url, User: accessToken, Password: accessToken}, nil
 }
 
 // AddQuayLabel takes the specific Quay URL and adds the properties/annotations given by BD

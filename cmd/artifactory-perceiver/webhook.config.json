@@ -1,0 +1,16 @@
+{
+  "webhooks": {
+      "docker": {
+          "url": "http://35.188.188.40:443/webhook",
+          "events": [
+            "docker.tagCreated"
+          ],
+          "repositories": [
+            "docker-local"
+          ],
+          "format": "spinnaker"
+      }
+  },
+
+  "baseurl": "https://salesaf.blackducksoftware.com/artifactory"
+}

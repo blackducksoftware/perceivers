@@ -22,7 +22,6 @@ under the License.
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -30,7 +29,6 @@ import (
 
 	"github.com/blackducksoftware/perceivers/pkg/annotator"
 	"github.com/blackducksoftware/perceivers/pkg/webhook"
-	utils "github.com/blackducksoftware/perceivers/pkg/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -59,7 +57,7 @@ func NewQuayPerceiver(configPath string) (*QuayPerceiver, error) {
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.Perceptor.Host, config.Perceptor.Port)
 	qp := QuayPerceiver{
 		annotator:          annotator.NewQuayAnnotator(perceptorURL, config.PrivateDockerRegistries, config.QuayAccessToken),
-		webhook:          	webhook.NewQuayWebhook(perceptorURL, config.PrivateDockerRegistries, config.QuayAccessToken),
+		webhook:            webhook.NewQuayWebhook(perceptorURL, config.PrivateDockerRegistries, config.QuayAccessToken),
 		annotationInterval: time.Second * time.Duration(config.Perceiver.AnnotationIntervalSeconds),
 		dumpInterval:       time.Minute * time.Duration(config.Perceiver.DumpIntervalMinutes),
 		metricsURL:         fmt.Sprintf(":%d", config.Perceiver.Port),
