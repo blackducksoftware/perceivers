@@ -54,3 +54,13 @@ type ArtReposBySha struct {
 		URI string `json:"uri"`
 	} `json:"results"`
 }
+
+// ArtHookStruct is the structure returned by Artifactory webhook
+type ArtHookStruct struct {
+	Artifacts []struct {
+		Type      string `json:"type"`
+		Name      string `json:"name"`
+		Version   string `json:"version"`
+		Reference string `json:"reference"`
+	} `json:"artifacts"`
+}

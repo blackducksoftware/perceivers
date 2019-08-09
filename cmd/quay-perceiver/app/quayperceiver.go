@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/perceivers/pkg/annotator"
-	"github.com/blackducksoftware/perceivers/pkg/controller"
+	"github.com/blackducksoftware/perceivers/pkg/webhook"
 	utils "github.com/blackducksoftware/perceivers/pkg/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -37,12 +37,10 @@ import (
 
 // QuayPerceiver handles watching and annotating Images
 type QuayPerceiver struct {
-	controller         *controller.QuayController
 	annotator          *annotator.QuayAnnotator
+	webhook            *webhook.QuayWebhook
 	annotationInterval time.Duration
 	dumpInterval       time.Duration
-	quayAccessToken    string
-	perceptorURL       string
 	metricsURL         string
 }
 
@@ -60,12 +58,10 @@ func NewQuayPerceiver(configPath string) (*QuayPerceiver, error) {
 
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.Perceptor.Host, config.Perceptor.Port)
 	qp := QuayPerceiver{
-		controller:         controller.NewQuayController(perceptorURL, config.PrivateDockerRegistries, config.QuayAccessToken),
 		annotator:          annotator.NewQuayAnnotator(perceptorURL, config.PrivateDockerRegistries, config.QuayAccessToken),
+		webhook:          	webhook.NewQuayWebhook(perceptorURL, config.PrivateDockerRegistries, config.QuayAccessToken),
 		annotationInterval: time.Second * time.Duration(config.Perceiver.AnnotationIntervalSeconds),
 		dumpInterval:       time.Minute * time.Duration(config.Perceiver.DumpIntervalMinutes),
-		quayAccessToken:    config.QuayAccessToken,
-		perceptorURL:       perceptorURL,
 		metricsURL:         fmt.Sprintf(":%d", config.Perceiver.Port),
 	}
 	return &qp, nil
@@ -74,23 +70,7 @@ func NewQuayPerceiver(configPath string) (*QuayPerceiver, error) {
 // Run starts the QuayPerceiver watching and annotating Images
 func (qp *QuayPerceiver) Run(stopCh <-chan struct{}) {
 	log.Infof("starting quay controllers")
-	go qp.controller.Run(qp.dumpInterval, stopCh)
 	go qp.annotator.Run(qp.annotationInterval, stopCh)
-
-	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			log.Info("Quay hook incoming!")
-			qr := &utils.QuayRepo{}
-			json.NewDecoder(r.Body).Decode(qr)
-			webhook(qp.quayAccessToken, qp.perceptorURL, qr)
-		}
-	})
-	log.Infof("starting webhook on 443 at /webhook")
-	err := http.ListenAndServe(":443", nil)
-	if err != nil {
-		log.Error("Webhook listener failed!")
-		log.Fatal(err)
-	}
-
+	go qp.webhook.Run()
 	<-stopCh
 }

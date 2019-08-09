@@ -47,7 +47,7 @@ func NewArtifactoryController(perceptorURL string, credentials []*utils.Registry
 
 // Run starts a controller that watches images and sends them to perceptor
 func (ic *ArtifactoryController) Run(interval time.Duration, stopCh <-chan struct{}) {
-	log.Infof("starting artifactory controller")
+	log.Infof("Controller: starting artifactory controller")
 	for {
 		select {
 		case <-stopCh:
@@ -57,7 +57,7 @@ func (ic *ArtifactoryController) Run(interval time.Duration, stopCh <-chan struc
 
 		err := ic.imageLookup()
 		if err != nil {
-			log.Errorf("failed to add artifactory images to scan queue: %v", err)
+			log.Errorf("Controller: failed to add artifactory images to scan queue: %v", err)
 		}
 
 		time.Sleep(interval)
@@ -65,13 +65,12 @@ func (ic *ArtifactoryController) Run(interval time.Duration, stopCh <-chan struc
 }
 
 func (ic *ArtifactoryController) imageLookup() error {
-	log.Infof("Total %d private registries credentials found!", len(ic.registryAuths))
+	log.Infof("Controller: Total %d private registries credentials found!", len(ic.registryAuths))
 	for _, registry := range ic.registryAuths {
 
-		baseURL := fmt.Sprintf("https://%s", registry.URL)
-		cred, err := utils.PingArtifactoryServer(baseURL, registry.User, registry.Password)
+		cred, err := utils.PingArtifactoryServer("http://"+registry.URL, registry.User, registry.Password)
 		if err != nil {
-			log.Debugf("Controller: URL %s either not a valid Artifactory repository or incorrect credentials: %e", baseURL, err)
+			log.Debugf("Controller: URL %s either not a valid Artifactory repository or incorrect credentials: %e", registry.URL, err)
 			continue
 		}
 
@@ -80,34 +79,34 @@ func (ic *ArtifactoryController) imageLookup() error {
 		imageTags := &utils.ArtImageTags{}
 		imageSHAs := &utils.ArtImageSHAs{}
 
-		url := fmt.Sprintf("%s/api/repositories?packageType=docker", baseURL)
+		url := fmt.Sprintf("%s/api/repositories?packageType=docker", cred.URL)
 		err = utils.GetResourceOfType(url, cred, "", dockerRepos)
 		if err != nil {
-			log.Errorf("Error in getting docker repo: %e", err)
+			log.Errorf("Controller: Error in getting docker repo: %e", err)
 			continue
 		}
 
 		for _, repo := range *dockerRepos {
-			url = fmt.Sprintf("%s/api/docker/%s/v2/_catalog", baseURL, repo.Key)
+			url = fmt.Sprintf("%s/api/docker/%s/v2/_catalog", cred.URL, repo.Key)
 			err = utils.GetResourceOfType(url, cred, "", images)
 			if err != nil {
-				log.Errorf("Error in getting catalog in repo: %e", err)
+				log.Errorf("Controller: Error in getting catalog in repo: %e", err)
 				continue
 			}
 
 			for _, image := range images.Repositories {
-				url = fmt.Sprintf("%s/api/docker/%s/v2/%s/tags/list", baseURL, repo.Key, image)
+				url = fmt.Sprintf("%s/api/docker/%s/v2/%s/tags/list", cred.URL, repo.Key, image)
 				err = utils.GetResourceOfType(url, cred, "", imageTags)
 				if err != nil {
-					log.Errorf("Error in getting image: %e", err)
+					log.Errorf("Controller: Error in getting image: %e", err)
 					continue
 				}
 
 				for _, tag := range imageTags.Tags {
-					url = fmt.Sprintf("%s/api/storage/%s/%s/%s/manifest.json?properties=sha256", baseURL, repo.Key, image, tag)
+					url = fmt.Sprintf("%s/api/storage/%s/%s/%s/manifest.json?properties=sha256", cred.URL, repo.Key, image, tag)
 					err = utils.GetResourceOfType(url, cred, "", imageSHAs)
 					if err != nil {
-						log.Errorf("Error in getting SHAs of the artifactory image: %e", err)
+						log.Errorf("Controller: Error in getting SHAs of the artifactory image: %e", err)
 						continue
 					}
 
@@ -115,7 +114,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 
 						sha, err := m.NewDockerImageSha(sha)
 						if err != nil {
-							log.Errorf("Error in docker SHA: %e", err)
+							log.Errorf("Controller: Error in docker SHA: %e", err)
 						} else {
 
 							// Remove Tag & HTTPS because image model doesn't require it
@@ -124,9 +123,9 @@ func (ic *ArtifactoryController) imageLookup() error {
 
 							err := utils.PutImageOnScanQueue(ic.perceptorURL, artImage)
 							if err != nil {
-								log.Errorf("Error putting artifactory image %v in perceptor queue %e", artImage, err)
+								log.Errorf("Controller: Error putting artifactory image %v in perceptor queue %e", artImage, err)
 							} else {
-								log.Infof("Successfully put image %s with tag %s in perceptor queue", url, tag)
+								log.Infof("Controller: Successfully put image %s with tag %s in perceptor queue", url, tag)
 							}
 						}
 					}
@@ -134,7 +133,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 			}
 		}
 
-		log.Infof("There were total %d docker repositories found in artifactory.", len(images.Repositories))
+		log.Infof("Controller: There were total %d docker repositories found in artifactory.", len(images.Repositories))
 
 	}
 

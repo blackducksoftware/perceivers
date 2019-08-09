@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 	m "github.com/blackducksoftware/perceptor/pkg/core/model"
@@ -79,8 +80,19 @@ func PingArtifactoryServer(url string, username string, password string) (*Regis
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		// Making sure that http and https both return not OK
+		if strings.Contains(url, "http://") {
+			url = strings.Replace(url, "http://", "https://", -1)
+			// Reset to baseURL
+			url = strings.Replace(url, "/api/system/ping", "", -1)
+			return PingArtifactoryServer(url, username, password)
+		}
+
 		return nil, fmt.Errorf("Error in pinging artifactory server supposed to get %d response code got %d", http.StatusOK, resp.StatusCode)
 	}
+
+	// Reset to baseURL
+	url = strings.Replace(url, "/api/system/ping", "", -1)
 	return &RegistryAuth{URL: url, User: username, Password: password}, nil
 }
 

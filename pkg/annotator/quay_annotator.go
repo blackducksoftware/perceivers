@@ -128,7 +128,8 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 		regs = regs + 1
 		for _, image := range results.Images {
 
-			if registry.URL != strings.Split(image.Repository, "/")[0] {
+			// The base URL may contain /artifactory in thier instance, splitting has no loss
+			if strings.Contains(image.Repository, registry.URL) {
 				continue
 			}
 
@@ -169,7 +170,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 
 		}
 
-		log.Infof("Total images in Quay with URL %s: %d", registry.URL, imgs)
+		log.Infof("Total scanned images in Quay with URL %s: %d", registry.URL, imgs)
 	}
 
 	log.Infof("Total valid Quay Registries: %d", regs)

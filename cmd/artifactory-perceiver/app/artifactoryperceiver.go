@@ -29,6 +29,7 @@ import (
 
 	"github.com/blackducksoftware/perceivers/pkg/annotator"
 	"github.com/blackducksoftware/perceivers/pkg/controller"
+	"github.com/blackducksoftware/perceivers/pkg/webhook"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -37,6 +38,7 @@ import (
 type ArtifactoryPerceiver struct {
 	controller         *controller.ArtifactoryController
 	annotator          *annotator.ArtifactoryAnnotator
+	webhook            *webhook.ArtifactoryWebhook
 	annotationInterval time.Duration
 	dumpInterval       time.Duration
 	metricsURL         string
@@ -58,6 +60,7 @@ func NewArtifactoryPerceiver(configPath string) (*ArtifactoryPerceiver, error) {
 	ap := ArtifactoryPerceiver{
 		controller:         controller.NewArtifactoryController(perceptorURL, config.PrivateDockerRegistries),
 		annotator:          annotator.NewArtifactoryAnnotator(perceptorURL, config.PrivateDockerRegistries),
+		webhook:            webhook.NewArtifactoryWebhook(perceptorURL, config.PrivateDockerRegistries),
 		annotationInterval: time.Second * time.Duration(config.Perceiver.AnnotationIntervalSeconds),
 		dumpInterval:       time.Minute * time.Duration(config.Perceiver.DumpIntervalMinutes),
 		metricsURL:         fmt.Sprintf(":%d", config.Perceiver.Port),
@@ -70,9 +73,6 @@ func (ap *ArtifactoryPerceiver) Run(stopCh <-chan struct{}) {
 	log.Infof("starting artifactory controllers")
 	go ap.controller.Run(ap.dumpInterval, stopCh)
 	go ap.annotator.Run(ap.annotationInterval, stopCh)
-
-	log.Infof("starting prometheus on %s", ap.metricsURL)
-	http.ListenAndServe(ap.metricsURL, nil)
-
+	go ap.webhook.Run()
 	<-stopCh
 }
