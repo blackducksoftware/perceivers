@@ -51,7 +51,7 @@ func (aw *ArtifactoryWebhook) Run() {
 	log.Infof("Webhook: starting artifactory webhook on 443 at /webhook")
 	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			log.Info("Artifactory hook incoming!")
+			log.Info("Webhook: Artifactory hook incoming!")
 			ahs := &utils.ArtHookStruct{}
 			json.NewDecoder(r.Body).Decode(ahs)
 			for _, registry := range aw.registryAuths {
@@ -66,17 +66,12 @@ func (aw *ArtifactoryWebhook) Run() {
 	})
 	err := http.ListenAndServe(":443", nil)
 	if err != nil {
-		log.Error("Webhook listener failed!")
+		log.Error("Webhook: Webhook listener failed!")
 	}
 }
 
 func (aw *ArtifactoryWebhook) webhook(ahs *utils.ArtHookStruct, cred *utils.RegistryAuth, perceptorURL string) {
 	for _, a := range ahs.Artifacts {
-		log.Info(a.Type)
-		log.Info(a.Name)
-		log.Info(a.Version)
-		log.Info(a.Reference)
-
 		// Trying to find the repo key, cannot split because image may contain '/'
 		// So stripping down the returned URL by removing everything
 		returnedURL := a.Reference
@@ -85,7 +80,7 @@ func (aw *ArtifactoryWebhook) webhook(ahs *utils.ArtHookStruct, cred *utils.Regi
 		}
 		woBase := strings.Replace(returnedURL, cred.URL+"/", "", -1)
 		woRepo := strings.Replace(woBase, "/"+a.Name, "", -1)
-		repoKey := strings.Replace(woRepo, ":"+woRepo, "", -1)
+		repoKey := strings.Replace(woRepo, ":"+a.Version, "", -1)
 
 		imageSHAs := &utils.ArtImageSHAs{}
 		url := fmt.Sprintf("%s/api/storage/%s/%s/%s/manifest.json?properties=sha256", cred.URL, repoKey, a.Name, a.Version)

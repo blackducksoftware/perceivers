@@ -66,7 +66,7 @@ func GetResourceOfType(url string, cred *RegistryAuth, bearerToken string, targe
 }
 
 // PingArtifactoryServer takes in the specified URL with username & password and checks weather
-// it's a valid login for artifactory by pinging the server
+// it's a valid login for artifactory by pinging the server with various options and returns the correct URL
 func PingArtifactoryServer(url string, username string, password string) (*RegistryAuth, error) {
 	url = fmt.Sprintf("%s/api/system/ping", url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -85,6 +85,12 @@ func PingArtifactoryServer(url string, username string, password string) (*Regis
 			url = strings.Replace(url, "http://", "https://", -1)
 			// Reset to baseURL
 			url = strings.Replace(url, "/api/system/ping", "", -1)
+			return PingArtifactoryServer(url, username, password)
+		}
+
+		// The instance may contain /artifactory
+		if !strings.Contains(url, "/artifactory") {
+			url = strings.Replace(url, "/api/system/ping", "/artifactory", -1)
 			return PingArtifactoryServer(url, username, password)
 		}
 

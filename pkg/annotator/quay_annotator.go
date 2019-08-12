@@ -128,7 +128,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 		for _, image := range results.Images {
 
 			// The base URL may contain /artifactory in thier instance, splitting has no loss
-			if !strings.Contains(image.Repository, registry.URL) {
+			if !strings.Contains(image.Repository, strings.Split(registry.URL, "/")[0]) {
 				continue
 			}
 
@@ -137,6 +137,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 			labelList := &utils.QuayLabels{}
 			// Look for SHA
 			url := fmt.Sprintf("%s/api/v1/repository/%s/manifest/%s/labels", auth.URL, repo, fmt.Sprintf("sha256:%s", image.Sha))
+			log.Infof("Getting labels from: %s", url)
 			err = utils.GetResourceOfType(url, nil, auth.Password, labelList)
 			if err != nil {
 				log.Errorf("Error in getting labels for repo %s: %e", repo, err)
