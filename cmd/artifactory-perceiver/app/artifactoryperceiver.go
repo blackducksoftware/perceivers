@@ -42,6 +42,7 @@ type ArtifactoryPerceiver struct {
 	annotationInterval time.Duration
 	dumpInterval       time.Duration
 	metricsURL         string
+	dumper             bool
 }
 
 // NewArtifactoryPerceiver creates a new ImagePerceiver object
@@ -64,6 +65,7 @@ func NewArtifactoryPerceiver(configPath string) (*ArtifactoryPerceiver, error) {
 		annotationInterval: time.Second * time.Duration(config.Perceiver.AnnotationIntervalSeconds),
 		dumpInterval:       time.Minute * time.Duration(config.Perceiver.DumpIntervalMinutes),
 		metricsURL:         fmt.Sprintf(":%d", config.Perceiver.Port),
+		dumper:             config.Dumper,
 	}
 	return &ap, nil
 }
@@ -71,7 +73,10 @@ func NewArtifactoryPerceiver(configPath string) (*ArtifactoryPerceiver, error) {
 // Run starts the ArtifactoryPerceiver watching and annotating Images
 func (ap *ArtifactoryPerceiver) Run(stopCh <-chan struct{}) {
 	log.Infof("starting artifactory controllers")
-	go ap.controller.Run(ap.dumpInterval, stopCh)
+	// Only run if config set
+	if ap.dumper {
+		go ap.controller.Run(ap.dumpInterval, stopCh)
+	}
 	go ap.annotator.Run(ap.annotationInterval, stopCh)
 	go ap.webhook.Run()
 	<-stopCh

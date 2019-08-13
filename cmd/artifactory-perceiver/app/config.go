@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/blackducksoftware/perceivers/pkg/utils"
 	"github.com/fsnotify/fsnotify"
@@ -49,6 +50,7 @@ type Config struct {
 	Perceptor               PerceptorConfig
 	Perceiver               PerceiverConfig
 	PrivateDockerRegistries []*utils.RegistryAuth
+	Dumper                  bool
 }
 
 // GetConfig returns a configuration object to configure a ImagePerceiver
@@ -61,6 +63,10 @@ func GetConfig(configPath string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
 	}
+
+	viper.SetEnvPrefix("AT")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.BindEnv("Dumper")
 
 	err = viper.Unmarshal(&cfg)
 	if err != nil {
