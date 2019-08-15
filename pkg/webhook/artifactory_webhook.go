@@ -96,10 +96,11 @@ func (aw *ArtifactoryWebhook) webhook(ahs *utils.ArtHookStruct, cred *utils.Regi
 				log.Errorf("Webhook: Error in docker SHA: %e", err)
 			} else {
 
-				// Remove Tag & HTTPS because image model doesn't require it
+				// Remove Tag & HTTPS, /artifactory because image model doesn't require it
 				url = fmt.Sprintf("%s/%s/%s", cred.URL, repoKey, a.Name)
 				url = strings.Replace(url, "http://", "", -1)
 				url = strings.Replace(url, "https://", "", -1)
+				url = strings.Replace(url, "/artifactory", "", -1)
 				artImage := m.NewImage(url, a.Version, sha, 1, url, a.Version)
 
 				err := utils.PutImageOnScanQueue(perceptorURL, artImage)
