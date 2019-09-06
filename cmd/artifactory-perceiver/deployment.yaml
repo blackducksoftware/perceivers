@@ -30,6 +30,9 @@ spec:
         - /etc/opssight-pod-processor/opssight.json
         command:
         - ./artifactory-perceiver
+        env:
+        - name: "AT_DUMPER"
+          value: "false"
         envFrom:
         - secretRef:
             name: blackduck
@@ -65,9 +68,3 @@ spec:
           defaultMode: 420
           name: opssight
         name: opssight-pod-processor
-status:
-  availableReplicas: 1
-  observedGeneration: 1
-  readyReplicas: 1
-  replicas: 1
-  updatedReplicas: 1

@@ -116,7 +116,7 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 
 	for _, registry := range ia.registryAuths {
 
-		cred, err := utils.PingArtifactoryServer("http://"+registry.URL, registry.User, registry.Password)
+		cred, err := utils.PingArtifactoryServer("https://"+registry.URL, registry.User, registry.Password)
 
 		if err != nil {
 			log.Debugf("Annotator: URL %s either not a valid Artifactory repository or incorrect credentials: %e", registry.URL, err)

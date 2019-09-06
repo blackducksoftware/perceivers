@@ -79,18 +79,20 @@ func PingArtifactoryServer(url string, username string, password string) (*Regis
 		return nil, err
 	}
 
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		// Making sure that http and https both return not OK
-		if strings.Contains(url, "http://") {
-			url = strings.Replace(url, "http://", "https://", -1)
-			// Reset to baseURL
-			url = strings.Replace(url, "/api/system/ping", "", -1)
-			return PingArtifactoryServer(url, username, password)
-		}
 
 		// The instance may contain /artifactory
 		if !strings.Contains(url, "/artifactory") {
 			url = strings.Replace(url, "/api/system/ping", "/artifactory", -1)
+			return PingArtifactoryServer(url, username, password)
+		}
+
+		// Making sure that http and https both return not OK
+		if strings.Contains(url, "https://") {
+			url = strings.Replace(url, "https://", "http://", -1)
+			// Reset to baseURL
+			url = strings.Replace(url, "/api/system/ping", "", -1)
 			return PingArtifactoryServer(url, username, password)
 		}
 
@@ -140,10 +142,11 @@ func PingQuayServer(url string, accessToken string) (*RegistryAuth, error) {
 		return nil, fmt.Errorf("Error in pinging quay server %e", err)
 	}
 
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		// Making sure that http and https both return not OK
-		if strings.Contains(url, "http://") {
-			url = strings.Replace(url, "http://", "https://", -1)
+		if strings.Contains(url, "https://") {
+			url = strings.Replace(url, "https://", "http://", -1)
 			// Reset to baseURL
 			url = strings.Replace(url, "/api/v1/user", "", -1)
 			return PingQuayServer(url, accessToken)
@@ -152,7 +155,8 @@ func PingQuayServer(url string, accessToken string) (*RegistryAuth, error) {
 		return nil, fmt.Errorf("Error in pinging quay server supposed to get %d response code got %d", http.StatusOK, resp.StatusCode)
 	}
 
-	// Just filling stuff
+	// Reset to baseURL
+	url = strings.Replace(url, "/api/v1/user", "", -1)
 	return &RegistryAuth{URL: url, User: accessToken, Password: accessToken}, nil
 }
 

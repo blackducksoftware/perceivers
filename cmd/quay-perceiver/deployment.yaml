@@ -1,8 +1,7 @@
 # Please edit the object below. Lines beginning with a '#' will be ignored,
 # and an empty file will abort the edit. If an error occurs while saving this file will be
 # reopened with the relevant failures.
-#
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
@@ -45,7 +44,7 @@ spec:
         - ./quay-perceiver
         env:
         - name: "AT_QUAYACCESSTOKEN"
-          value: "vWTdT8CxuzI0wzJtYMQIsyLC2wXe0kcRswTrHs6Z"
+          value: "pVnfIHISJXWrpBrKt08qhIq7fCJWbx33cU4vh84T"
         envFrom:
         - secretRef:
             name: blackduck
@@ -81,9 +80,3 @@ spec:
           defaultMode: 420
           name: opssight
         name: opssight-pod-processor
-status:
-  availableReplicas: 1
-  observedGeneration: 1
-  readyReplicas: 1
-  replicas: 1
-  updatedReplicas: 1

@@ -55,7 +55,7 @@ func (aw *ArtifactoryWebhook) Run() {
 			ahs := &utils.ArtHookStruct{}
 			json.NewDecoder(r.Body).Decode(ahs)
 			for _, registry := range aw.registryAuths {
-				cred, err := utils.PingArtifactoryServer("http://"+registry.URL, registry.User, registry.Password)
+				cred, err := utils.PingArtifactoryServer("https://"+registry.URL, registry.User, registry.Password)
 				if err != nil {
 					log.Debugf("Webhook: URL %s either not a valid Artifactory repository or incorrect credentials: %e", registry.URL, err)
 					continue

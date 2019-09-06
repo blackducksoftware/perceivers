@@ -68,7 +68,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 	log.Infof("Controller: Total %d private registries credentials found!", len(ic.registryAuths))
 	for _, registry := range ic.registryAuths {
 
-		cred, err := utils.PingArtifactoryServer("http://"+registry.URL, registry.User, registry.Password)
+		cred, err := utils.PingArtifactoryServer("https://"+registry.URL, registry.User, registry.Password)
 		if err != nil {
 			log.Debugf("Controller: URL %s either not a valid Artifactory repository or incorrect credentials: %e", registry.URL, err)
 			continue

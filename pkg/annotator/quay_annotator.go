@@ -117,7 +117,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 	imgs := 0
 
 	for _, registry := range qa.registryAuths {
-		auth, err := utils.PingQuayServer("http://"+registry.URL, qa.quayAccessToken)
+		auth, err := utils.PingQuayServer("https://"+registry.URL, qa.quayAccessToken)
 
 		if err != nil {
 			log.Debugf("Annotator: URL %s either not a valid quay repository or incorrect token: %e", registry.URL, err)
@@ -201,5 +201,5 @@ func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue 
 		log.Errorf("Error in adding label %s at URL %s after deleting: %e", labelKey, url, err)
 	}
 
-	log.Errorf("Successfully annotated quay image!")
+	log.Infof("Successfully annotated quay image!")
 }
