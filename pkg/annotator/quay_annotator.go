@@ -127,7 +127,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 		regs = regs + 1
 		for _, image := range results.Images {
 
-			// The base URL may contain /artifactory in thier instance, splitting has no loss
+			// The base URL may contain something in thier instance, splitting has no loss
 			if !strings.Contains(image.Repository, strings.Split(registry.URL, "/")[0]) {
 				continue
 			}
