@@ -22,8 +22,10 @@ under the License.
 package annotator
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -34,6 +36,52 @@ import (
 	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 	log "github.com/sirupsen/logrus"
 )
+
+// QuayRepo contains a quay image with list of tags
+type QuayRepo struct {
+	Name        string   `json:"name"`
+	Repository  string   `json:"repository"`
+	Namespace   string   `json:"namespace"`
+	DockerURL   string   `json:"docker_url"`
+	Homepage    string   `json:"homepage"`
+	UpdatedTags []string `json:"updated_tags"`
+}
+
+// QuayTagDigest contains Digest for a particular Quay image
+type QuayTagDigest struct {
+	HasAdditional bool `json:"has_additional"`
+	Page          int  `json:"page"`
+	Tags          []struct {
+		Name           string `json:"name"`
+		Reversion      bool   `json:"reversion"`
+		StartTs        int    `json:"start_ts"`
+		ImageID        string `json:"image_id"`
+		LastModified   string `json:"last_modified"`
+		ManifestDigest string `json:"manifest_digest"`
+		DockerImageID  string `json:"docker_image_id"`
+		IsManifestList bool   `json:"is_manifest_list"`
+		Size           int    `json:"size"`
+	} `json:"tags"`
+}
+
+// QuayLabels contains a list of returned Labels on an image
+type QuayLabels struct {
+	Labels []struct {
+		Value      string `json:"value"`
+		MediaType  string `json:"media_type"`
+		ID         string `json:"id"`
+		Key        string `json:"key"`
+		SourceType string `json:"source_type"`
+	} `json:"labels"`
+}
+
+// QuayLabel is used for Posting a new label,
+// doesn't need to have json metadatas but couldn't hurt
+type QuayLabel struct {
+	MediaType string `json:"media_type"`
+	Value     string `json:"value"`
+	Key       string `json:"key"`
+}
 
 // BlackDuck Annotation names
 const (
@@ -120,7 +168,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 	imgs := 0
 
 	for _, registry := range qa.registryAuths {
-		auth, err := utils.PingQuayServer("https://"+registry.URL, qa.quayAccessToken)
+		auth, err := PingQuayServer("https://"+registry.URL, qa.quayAccessToken)
 
 		if err != nil {
 			log.Debugf("Annotator: URL %s either not a valid quay repository or incorrect token: %e", registry.URL, err)
@@ -137,7 +185,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 
 			repoSlice := strings.Split(image.Repository, "/")[1:]
 			repo := strings.Join(repoSlice, "/")
-			labelList := &utils.QuayLabels{}
+			labelList := &QuayLabels{}
 			// Look for SHA
 			url := fmt.Sprintf("%s/api/v1/repository/%s/manifest/%s/labels", auth.URL, repo, fmt.Sprintf("sha256:%s", image.Sha))
 			log.Infof("Getting labels from: %s", url)
@@ -184,7 +232,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue string, imageInfo string) {
 
 	filterURL := fmt.Sprintf("%s?filter=%s", url, labelKey)
-	labelList := &utils.QuayLabels{}
+	labelList := &QuayLabels{}
 	err := utils.GetResourceOfType(filterURL, nil, qa.quayAccessToken, labelList)
 	if err != nil {
 		log.Errorf("Error in getting labels at URL %s for update: %e", url, err)
@@ -193,14 +241,14 @@ func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue 
 
 	for _, label := range labelList.Labels {
 		deleteURL := fmt.Sprintf("%s/%s", url, label.ID)
-		err = utils.DeleteQuayLabel(deleteURL, qa.quayAccessToken, label.ID)
+		err = DeleteQuayLabel(deleteURL, qa.quayAccessToken, label.ID)
 		if err != nil {
 			log.Errorf("Error in deleting label %s at URL %s: %e", label.Key, deleteURL, err)
 			log.Errorf("Images may contain duplicate labels!")
 		}
 	}
 
-	err = utils.AddQuayLabel(url, qa.quayAccessToken, labelKey, newValue)
+	err = AddQuayLabel(url, qa.quayAccessToken, labelKey, newValue)
 	if err != nil {
 		log.Errorf("Error in adding label %s at URL %s after deleting: %e", labelKey, url, err)
 		return
@@ -208,4 +256,83 @@ func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue 
 
 	labelInfo := fmt.Sprintf("%s:%s", labelKey, newValue)
 	log.Infof("Successfully annotated %s with %s!", imageInfo, labelInfo)
+}
+
+// PingQuayServer takes in the specified URL with access token and checks weather
+// it's a valid token for quay by pinging the server
+func PingQuayServer(url string, accessToken string) (*utils.RegistryAuth, error) {
+	url = fmt.Sprintf("%s/api/v1/user", url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error in creating ping request for quay server %e", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("Error in pinging quay server %e", err)
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		// Making sure that http and https both return not OK
+		if strings.Contains(url, "https://") {
+			url = strings.Replace(url, "https://", "http://", -1)
+			// Reset to baseURL
+			url = strings.Replace(url, "/api/v1/user", "", -1)
+			return PingQuayServer(url, accessToken)
+		}
+
+		return nil, fmt.Errorf("Error in pinging quay server supposed to get %d response code got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	// Reset to baseURL
+	url = strings.Replace(url, "/api/v1/user", "", -1)
+	return &utils.RegistryAuth{URL: url, User: accessToken, Password: accessToken}, nil
+}
+
+// AddQuayLabel takes the specific Quay URL and adds the properties/annotations given by BD
+func AddQuayLabel(url string, accessToken string, labelKey string, labelValue string) error {
+	quayLabel := QuayLabel{MediaType: "text/plain", Value: labelValue, Key: labelKey}
+	buffer := new(bytes.Buffer)
+	json.NewEncoder(buffer).Encode(quayLabel)
+	req, err := http.NewRequest(http.MethodPost, url, buffer)
+	if err != nil {
+		return fmt.Errorf("Error in adding label request %e", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("Error in adding label %e", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("Successful creation not observer from server %s, status code: %d", url, resp.StatusCode)
+	}
+	return nil
+}
+
+// DeleteQuayLabel takes the specific Quay URL and deletes the properties/annotations given by BD
+func DeleteQuayLabel(url string, accessToken string, labelID string) error {
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		return fmt.Errorf("Error in deleting label request %e", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("Error in deleting label %e", err)
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("Successful deletion not observer from server %s, status code: %d", url, resp.StatusCode)
+	}
+	return nil
 }

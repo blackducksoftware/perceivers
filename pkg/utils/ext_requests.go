@@ -22,7 +22,6 @@ under the License.
 package utils
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -99,83 +98,4 @@ func PingArtifactoryServer(url string, username string, password string) (*Regis
 	// Reset to baseURL
 	url = strings.Replace(url, "/api/system/ping", "", -1)
 	return &RegistryAuth{URL: url, User: username, Password: password}, nil
-}
-
-// PingQuayServer takes in the specified URL with access token and checks weather
-// it's a valid token for quay by pinging the server
-func PingQuayServer(url string, accessToken string) (*RegistryAuth, error) {
-	url = fmt.Sprintf("%s/api/v1/user", url)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Error in creating ping request for quay server %e", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("Error in pinging quay server %e", err)
-	}
-
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		// Making sure that http and https both return not OK
-		if strings.Contains(url, "https://") {
-			url = strings.Replace(url, "https://", "http://", -1)
-			// Reset to baseURL
-			url = strings.Replace(url, "/api/v1/user", "", -1)
-			return PingQuayServer(url, accessToken)
-		}
-
-		return nil, fmt.Errorf("Error in pinging quay server supposed to get %d response code got %d", http.StatusOK, resp.StatusCode)
-	}
-
-	// Reset to baseURL
-	url = strings.Replace(url, "/api/v1/user", "", -1)
-	return &RegistryAuth{URL: url, User: accessToken, Password: accessToken}, nil
-}
-
-// AddQuayLabel takes the specific Quay URL and adds the properties/annotations given by BD
-func AddQuayLabel(url string, accessToken string, labelKey string, labelValue string) error {
-	quayLabel := QuayLabel{MediaType: "text/plain", Value: labelValue, Key: labelKey}
-	buffer := new(bytes.Buffer)
-	json.NewEncoder(buffer).Encode(quayLabel)
-	req, err := http.NewRequest(http.MethodPost, url, buffer)
-	if err != nil {
-		return fmt.Errorf("Error in adding label request %e", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("Error in adding label %e", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("Successful creation not observer from server %s, status code: %d", url, resp.StatusCode)
-	}
-	return nil
-}
-
-// DeleteQuayLabel takes the specific Quay URL and deletes the properties/annotations given by BD
-func DeleteQuayLabel(url string, accessToken string, labelID string) error {
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
-	if err != nil {
-		return fmt.Errorf("Error in deleting label request %e", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("Error in deleting label %e", err)
-	}
-
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("Successful deletion not observer from server %s, status code: %d", url, resp.StatusCode)
-	}
-	return nil
 }
