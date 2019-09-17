@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	utils "github.com/blackducksoftware/perceivers/pkg/utils"
 	m "github.com/blackducksoftware/perceptor/pkg/core/model"
 
@@ -121,7 +122,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 							url = fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
 							artImage := m.NewImage(url, tag, sha, 1, url, tag)
 
-							err := utils.PutImageOnScanQueue(ic.perceptorURL, artImage)
+							err = communicator.SendPerceptorAddEvent(ic.perceptorURL, artImage)
 							if err != nil {
 								log.Errorf("Controller: Error putting artifactory image %v in perceptor queue %e", artImage, err)
 							} else {
@@ -133,7 +134,7 @@ func (ic *ArtifactoryController) imageLookup() error {
 			}
 		}
 
-		log.Infof("Controller: There were total %d docker repositories found in artifactory.", len(images.Repositories))
+		log.Infof("Controller: There were total %d docker repositories found in artifactory instance %s.", len(images.Repositories), registry.URL)
 
 	}
 

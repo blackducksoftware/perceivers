@@ -45,7 +45,7 @@ type PerceiverConfig struct {
 	Port                      int
 }
 
-// Config return the Artifactory Perceiver configurations
+// Config return the ArtifactoryPerceiver configurations
 type Config struct {
 	Perceptor               PerceptorConfig
 	Perceiver               PerceiverConfig
@@ -53,7 +53,7 @@ type Config struct {
 	Dumper                  bool
 }
 
-// GetConfig returns a configuration object to configure a ImagePerceiver
+// GetConfig returns a configuration object to configure a ArtifactoryPerceiver
 func GetConfig(configPath string) (*Config, error) {
 	var cfg *Config
 
@@ -81,7 +81,7 @@ func GetConfig(configPath string) (*Config, error) {
 	return cfg, nil
 }
 
-// StartWatch will start watching the ImagePerceiver configuration file and
+// StartWatch will start watching the ArtifactoryPerceiver configuration file and
 // call the passed handler function when the configuration file has changed
 func (config *Config) StartWatch(handler func(fsnotify.Event)) {
 	viper.WatchConfig()

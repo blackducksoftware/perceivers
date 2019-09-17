@@ -50,7 +50,7 @@ type QuayAnnotator struct {
 	quayAccessToken string
 }
 
-// NewQuayAnnotator creates a new ArtifactoryAnnotator object
+// NewQuayAnnotator creates a new QuayAnnotator object
 func NewQuayAnnotator(perceptorURL string, registryAuths []*utils.RegistryAuth, quayAccessToken string) *QuayAnnotator {
 	return &QuayAnnotator{
 		scanResultsURL:  fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ScanResultsPath),
@@ -79,6 +79,7 @@ func (qa *QuayAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
 	}
 }
 
+// This method tries to annotate all the images
 func (qa *QuayAnnotator) annotate() error {
 	// Get all the scan results from the Perceptor
 	log.Infof("attempting to GET %s for quay image annotation", qa.scanResultsURL)
@@ -94,6 +95,7 @@ func (qa *QuayAnnotator) annotate() error {
 	return nil
 }
 
+// This method gets the scan results from perceptor and tries to unmarshal it
 func (qa *QuayAnnotator) getScanResults() (*perceptorapi.ScanResults, error) {
 	var results perceptorapi.ScanResults
 
@@ -112,6 +114,7 @@ func (qa *QuayAnnotator) getScanResults() (*perceptorapi.ScanResults, error) {
 	return &results, nil
 }
 
+// This method tries to annotate all the Images found in BD by matching their SHAs
 func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults) {
 	regs := 0
 	imgs := 0
@@ -127,7 +130,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 		regs = regs + 1
 		for _, image := range results.Images {
 
-			// The base URL may contain something in thier instance, splitting has no loss
+			// The base URL may contain something in their instance/registry, splitting has no loss
 			if !strings.Contains(image.Repository, strings.Split(registry.URL, "/")[0]) {
 				continue
 			}
@@ -164,7 +167,8 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 			for key, value := range tags {
 				// Don't need to touch other tags apart form BD ones
 				if _, ok := nt[key]; ok {
-					qa.UpdateAnnotation(url, key, value)
+					imageInfo := fmt.Sprintf("%s:%s with SHA %s", image.Repository, image.Tag, image.Sha)
+					qa.UpdateAnnotation(url, key, value, imageInfo)
 				}
 			}
 
@@ -177,7 +181,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 }
 
 // UpdateAnnotation takes the specific Quay URL and applies the properties/annotations given by BD
-func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue string) {
+func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue string, imageInfo string) {
 
 	filterURL := fmt.Sprintf("%s?filter=%s", url, labelKey)
 	labelList := &utils.QuayLabels{}
@@ -199,7 +203,9 @@ func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue 
 	err = utils.AddQuayLabel(url, qa.quayAccessToken, labelKey, newValue)
 	if err != nil {
 		log.Errorf("Error in adding label %s at URL %s after deleting: %e", labelKey, url, err)
+		return
 	}
 
-	log.Infof("Successfully annotated quay image!")
+	labelInfo := fmt.Sprintf("%s:%s", labelKey, newValue)
+	log.Infof("Successfully annotated %s with %s!", imageInfo, labelInfo)
 }

@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	utils "github.com/blackducksoftware/perceivers/pkg/utils"
 	m "github.com/blackducksoftware/perceptor/pkg/core/model"
 	log "github.com/sirupsen/logrus"
@@ -103,7 +104,7 @@ func (aw *ArtifactoryWebhook) webhook(ahs *utils.ArtHookStruct, cred *utils.Regi
 				url = strings.Replace(url, "/artifactory", "", -1)
 				artImage := m.NewImage(url, a.Version, sha, 1, url, a.Version)
 
-				err := utils.PutImageOnScanQueue(perceptorURL, artImage)
+				err = communicator.SendPerceptorAddEvent(perceptorURL, artImage)
 				if err != nil {
 					log.Errorf("Webhook: Error putting artifactory image %v in perceptor queue %e", artImage, err)
 				} else {

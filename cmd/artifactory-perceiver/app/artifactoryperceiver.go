@@ -45,7 +45,7 @@ type ArtifactoryPerceiver struct {
 	dumper             bool
 }
 
-// NewArtifactoryPerceiver creates a new ImagePerceiver object
+// NewArtifactoryPerceiver creates a new ArtifactoryPerceiver object
 func NewArtifactoryPerceiver(configPath string) (*ArtifactoryPerceiver, error) {
 	config, err := GetConfig(configPath)
 	if err != nil {

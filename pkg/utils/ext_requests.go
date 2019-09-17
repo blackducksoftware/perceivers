@@ -27,9 +27,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
-	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
-	m "github.com/blackducksoftware/perceptor/pkg/core/model"
 )
 
 // RegistryAuth stores the credentials for a private docker repo
@@ -102,28 +99,6 @@ func PingArtifactoryServer(url string, username string, password string) (*Regis
 	// Reset to baseURL
 	url = strings.Replace(url, "/api/system/ping", "", -1)
 	return &RegistryAuth{URL: url, User: username, Password: password}, nil
-}
-
-// PutImageOnScanQueue pushes the image to the Perceptor queue
-func PutImageOnScanQueue(perceptorURL string, im *m.Image) error {
-	perceptorURL = fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ImagePath)
-	buffer := new(bytes.Buffer)
-	json.NewEncoder(buffer).Encode(im)
-	req, err := http.NewRequest(http.MethodPost, perceptorURL, buffer)
-	if err != nil {
-		return err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("OK status code not observer from perceptor, status code: %d", resp.StatusCode)
-	}
-
-	return nil
 }
 
 // PingQuayServer takes in the specified URL with access token and checks weather

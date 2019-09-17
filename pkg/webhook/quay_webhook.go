@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	utils "github.com/blackducksoftware/perceivers/pkg/utils"
 	m "github.com/blackducksoftware/perceptor/pkg/core/model"
 	log "github.com/sirupsen/logrus"
@@ -50,7 +51,7 @@ func NewQuayWebhook(perceptorURL string, credentials []*utils.RegistryAuth, quay
 
 // Run starts a controller that watches images and sends them to perceptor
 func (aw *QuayWebhook) Run() {
-	log.Infof("Webhook: starting quay webhook on 443 at /webhook")
+	log.Infof("Webhook: starting quay webhook on 8443 at /webhook")
 
 	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
@@ -60,10 +61,10 @@ func (aw *QuayWebhook) Run() {
 			aw.webhook(aw.quayAccessToken, aw.perceptorURL, qr)
 		}
 	})
-	log.Infof("starting quay webhook on 443 at /webhook")
-	err := http.ListenAndServe(":443", nil)
+	log.Infof("starting quay webhook on 8443 at /webhook")
+	err := http.ListenAndServe(":8443", nil)
 	if err != nil {
-		log.Error("Webhook listener failed!")
+		log.Error("Webhook: Webhook listener of 8443 failed!: %e", err)
 	}
 }
 
@@ -83,7 +84,7 @@ func (aw *QuayWebhook) webhook(bearerToken string, perceptorURL string, qr *util
 			log.Errorf("Webhook: Error in docker SHA: %e", err)
 		} else {
 			quayImage := m.NewImage(qr.DockerURL, tagDigest.Name, sha, 1, qr.DockerURL, tagDigest.Name)
-			err := utils.PutImageOnScanQueue(perceptorURL, quayImage)
+			err := communicator.SendPerceptorAddEvent(perceptorURL, quayImage)
 			if err != nil {
 				log.Errorf("Webhook: Error putting image %v in perceptor queue %e", quayImage, err)
 			} else {
