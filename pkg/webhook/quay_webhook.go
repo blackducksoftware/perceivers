@@ -29,7 +29,7 @@ import (
 
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	utils "github.com/blackducksoftware/perceivers/pkg/utils"
-	m "github.com/blackducksoftware/perceptor/pkg/core/model"
+	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -105,17 +105,14 @@ func (aw *QuayWebhook) webhook(bearerToken string, perceptorURL string, qr *Quay
 	}
 
 	for _, tagDigest := range rt.Tags {
-		sha, err := m.NewDockerImageSha(strings.Replace(tagDigest.ManifestDigest, "sha256:", "", -1))
+		sha := strings.Replace(tagDigest.ManifestDigest, "sha256:", "", -1)
+		priority := 1
+		quayImage := perceptorapi.NewImage(qr.DockerURL, tagDigest.Name, sha, &priority, qr.DockerURL, tagDigest.Name)
+		err = communicator.SendPerceptorAddEvent(perceptorURL, quayImage)
 		if err != nil {
-			log.Errorf("Webhook: Error in docker SHA: %e", err)
+			log.Errorf("Webhook: Error putting image %v in perceptor queue %e", quayImage, err)
 		} else {
-			quayImage := m.NewImage(qr.DockerURL, tagDigest.Name, sha, 1, qr.DockerURL, tagDigest.Name)
-			err := communicator.SendPerceptorAddEvent(perceptorURL, quayImage)
-			if err != nil {
-				log.Errorf("Webhook: Error putting image %v in perceptor queue %e", quayImage, err)
-			} else {
-				log.Infof("Webhook: Successfully put image %s with tag %s in perceptor queue", url, tagDigest.Name)
-			}
+			log.Infof("Webhook: Successfully put image %s with tag %s in perceptor queue", url, tagDigest.Name)
 		}
 	}
 

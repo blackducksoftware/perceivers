@@ -29,7 +29,7 @@ import (
 
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	utils "github.com/blackducksoftware/perceivers/pkg/utils"
-	m "github.com/blackducksoftware/perceptor/pkg/core/model"
+	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -92,25 +92,21 @@ func (aw *ArtifactoryWebhook) webhook(ahs *utils.ArtHookStruct, cred *utils.Regi
 		}
 		for _, sha := range imageSHAs.Properties.Sha256 {
 
-			sha, err := m.NewDockerImageSha(sha)
+			// Remove Tag & HTTPS, /artifactory because image model doesn't require it
+			url = fmt.Sprintf("%s/%s/%s", cred.URL, repoKey, a.Name)
+			url = strings.Replace(url, "http://", "", -1)
+			url = strings.Replace(url, "https://", "", -1)
+			url = strings.Replace(url, "/artifactory", "", -1)
+			priority := 1
+			artImage := perceptorapi.NewImage(url, a.Version, sha, &priority, url, a.Version)
+
+			err = communicator.SendPerceptorAddEvent(perceptorURL, artImage)
 			if err != nil {
-				log.Errorf("Webhook: Error in docker SHA: %e", err)
+				log.Errorf("Webhook: Error putting artifactory image %v in perceptor queue %e", artImage, err)
 			} else {
-
-				// Remove Tag & HTTPS, /artifactory because image model doesn't require it
-				url = fmt.Sprintf("%s/%s/%s", cred.URL, repoKey, a.Name)
-				url = strings.Replace(url, "http://", "", -1)
-				url = strings.Replace(url, "https://", "", -1)
-				url = strings.Replace(url, "/artifactory", "", -1)
-				artImage := m.NewImage(url, a.Version, sha, 1, url, a.Version)
-
-				err = communicator.SendPerceptorAddEvent(perceptorURL, artImage)
-				if err != nil {
-					log.Errorf("Webhook: Error putting artifactory image %v in perceptor queue %e", artImage, err)
-				} else {
-					log.Infof("Webhook: Successfully put image %s with tag %s in perceptor queue", url, a.Version)
-				}
+				log.Infof("Webhook: Successfully put image %s with tag %s in perceptor queue", url, a.Version)
 			}
+
 		}
 
 	}

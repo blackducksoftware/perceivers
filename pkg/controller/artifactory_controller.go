@@ -27,7 +27,7 @@ import (
 
 	"github.com/blackducksoftware/perceivers/pkg/communicator"
 	utils "github.com/blackducksoftware/perceivers/pkg/utils"
-	m "github.com/blackducksoftware/perceptor/pkg/core/model"
+	perceptorapi "github.com/blackducksoftware/perceptor/pkg/api"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -113,22 +113,17 @@ func (ic *ArtifactoryController) imageLookup() error {
 
 					for _, sha := range imageSHAs.Properties.Sha256 {
 
-						sha, err := m.NewDockerImageSha(sha)
+						// Remove Tag & HTTPS because image model doesn't require it
+						url = fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
+						priority := 1
+						artImage := perceptorapi.NewImage(url, tag, sha, &priority, url, tag)
+						err = communicator.SendPerceptorAddEvent(ic.perceptorURL, artImage)
 						if err != nil {
-							log.Errorf("Controller: Error in docker SHA: %e", err)
+							log.Errorf("Controller: Error putting artifactory image %v in perceptor queue %e", artImage, err)
 						} else {
-
-							// Remove Tag & HTTPS because image model doesn't require it
-							url = fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
-							artImage := m.NewImage(url, tag, sha, 1, url, tag)
-
-							err = communicator.SendPerceptorAddEvent(ic.perceptorURL, artImage)
-							if err != nil {
-								log.Errorf("Controller: Error putting artifactory image %v in perceptor queue %e", artImage, err)
-							} else {
-								log.Infof("Controller: Successfully put image %s with tag %s in perceptor queue", url, tag)
-							}
+							log.Infof("Controller: Successfully put image %s with tag %s in perceptor queue", url, tag)
 						}
+
 					}
 				}
 			}
