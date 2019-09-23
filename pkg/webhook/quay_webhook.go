@@ -78,7 +78,6 @@ func NewQuayWebhook(perceptorURL string, credentials []*utils.RegistryAuth, quay
 
 // Run starts a controller that watches images and sends them to perceptor
 func (aw *QuayWebhook) Run() {
-	log.Infof("Webhook: starting quay webhook on 8443 at /webhook")
 
 	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
@@ -88,10 +87,10 @@ func (aw *QuayWebhook) Run() {
 			aw.webhook(aw.quayAccessToken, aw.perceptorURL, qr)
 		}
 	})
-	log.Infof("starting quay webhook on 8443 at /webhook")
+	log.Infof("Webhook: starting quay webhook on 8443 at /webhook")
 	err := http.ListenAndServe(":8443", nil)
 	if err != nil {
-		log.Error("Webhook: Webhook listener of 8443 failed!: %e", err)
+		log.Errorf("Webhook: Webhook listener of 8443 failed: %e", err)
 	}
 }
 
