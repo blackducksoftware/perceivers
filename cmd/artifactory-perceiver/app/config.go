@@ -45,7 +45,7 @@ type PerceiverConfig struct {
 	Port                      int
 }
 
-// Config return the ArtifactoryPerceiver configurations
+// Config contains the ArtifactoryPerceiver configurations
 type Config struct {
 	Perceptor               PerceptorConfig
 	Perceiver               PerceiverConfig
