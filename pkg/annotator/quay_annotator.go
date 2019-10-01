@@ -49,35 +49,41 @@ type QuayRepo struct {
 
 // QuayTagDigest contains Digest for a particular Quay image
 type QuayTagDigest struct {
-	HasAdditional bool `json:"has_additional"`
-	Page          int  `json:"page"`
-	Tags          []struct {
-		Name           string `json:"name"`
-		Reversion      bool   `json:"reversion"`
-		StartTs        int    `json:"start_ts"`
-		ImageID        string `json:"image_id"`
-		LastModified   string `json:"last_modified"`
-		ManifestDigest string `json:"manifest_digest"`
-		DockerImageID  string `json:"docker_image_id"`
-		IsManifestList bool   `json:"is_manifest_list"`
-		Size           int    `json:"size"`
-	} `json:"tags"`
+	HasAdditional bool      `json:"has_additional"`
+	Page          int       `json:"page"`
+	Tags          []QuayTag `json:"tags"`
+}
+
+// QuayTag contains individual tag info for an image version
+type QuayTag struct {
+	Name           string `json:"name"`
+	Reversion      bool   `json:"reversion"`
+	StartTs        int    `json:"start_ts"`
+	ImageID        string `json:"image_id"`
+	LastModified   string `json:"last_modified"`
+	ManifestDigest string `json:"manifest_digest"`
+	DockerImageID  string `json:"docker_image_id"`
+	IsManifestList bool   `json:"is_manifest_list"`
+	Size           int    `json:"size"`
 }
 
 // QuayLabels contains a list of returned Labels on an image
 type QuayLabels struct {
-	Labels []struct {
-		Value      string `json:"value"`
-		MediaType  string `json:"media_type"`
-		ID         string `json:"id"`
-		Key        string `json:"key"`
-		SourceType string `json:"source_type"`
-	} `json:"labels"`
+	Labels []QuayLabel `json:"labels"`
 }
 
-// QuayLabel is used for Posting a new label,
-// doesn't need to have json metadatas but couldn't hurt
+// QuayLabel contains info on a single label attached to an image
 type QuayLabel struct {
+	Value      string `json:"value"`
+	MediaType  string `json:"media_type"`
+	ID         string `json:"id"`
+	Key        string `json:"key"`
+	SourceType string `json:"source_type"`
+}
+
+// QuayNewLabel is used for Posting a new label,
+// doesn't need to have json metadatas but couldn't hurt
+type QuayNewLabel struct {
 	MediaType string `json:"media_type"`
 	Value     string `json:"value"`
 	Key       string `json:"key"`
@@ -294,7 +300,7 @@ func PingQuayServer(url string, accessToken string) (*utils.RegistryAuth, error)
 
 // AddQuayLabel takes the specific Quay URL and adds the properties/annotations given by BD
 func AddQuayLabel(url string, accessToken string, labelKey string, labelValue string) error {
-	quayLabel := QuayLabel{MediaType: "text/plain", Value: labelValue, Key: labelKey}
+	quayLabel := QuayNewLabel{MediaType: "text/plain", Value: labelValue, Key: labelKey}
 	buffer := new(bytes.Buffer)
 	json.NewEncoder(buffer).Encode(quayLabel)
 	req, err := http.NewRequest(http.MethodPost, url, buffer)
