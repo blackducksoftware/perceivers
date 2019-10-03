@@ -1,7 +1,7 @@
 {
   "webhooks": {
       "docker": {
-          "url": "http://35.188.188.40:443/webhook",
+          "url": "http://34.70.192.195:8443/webhook",
           "events": [
             "docker.tagCreated"
           ],

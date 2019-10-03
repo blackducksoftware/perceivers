@@ -77,14 +77,14 @@ func NewQuayWebhook(perceptorURL string, credentials []*utils.RegistryAuth, quay
 }
 
 // Run starts a controller that watches images and sends them to perceptor
-func (aw *QuayWebhook) Run() {
+func (qw *QuayWebhook) Run() {
 
 	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			log.Info("Quay hook incoming!")
 			qr := &QuayRepo{}
 			json.NewDecoder(r.Body).Decode(qr)
-			aw.webhook(aw.quayAccessToken, aw.perceptorURL, qr)
+			qw.webhook(qw.quayAccessToken, qr)
 		}
 	})
 	log.Infof("Webhook: starting quay webhook on 8443 at /webhook")
@@ -94,7 +94,7 @@ func (aw *QuayWebhook) Run() {
 	}
 }
 
-func (aw *QuayWebhook) webhook(bearerToken string, perceptorURL string, qr *QuayRepo) {
+func (qw *QuayWebhook) webhook(bearerToken string, qr *QuayRepo) {
 
 	rt := &QuayTagDigest{}
 	url := strings.Replace(qr.Homepage, "repository", "api/v1/repository", -1)
@@ -108,7 +108,8 @@ func (aw *QuayWebhook) webhook(bearerToken string, perceptorURL string, qr *Quay
 		sha := strings.Replace(tagDigest.ManifestDigest, "sha256:", "", -1)
 		priority := 1
 		quayImage := perceptorapi.NewImage(qr.DockerURL, tagDigest.Name, sha, &priority, qr.DockerURL, tagDigest.Name)
-		err = communicator.SendPerceptorAddEvent(perceptorURL, quayImage)
+		imageURL := fmt.Sprintf("%s/%s", qw.perceptorURL, perceptorapi.ImagePath)
+		err = communicator.SendPerceptorAddEvent(imageURL, quayImage)
 		if err != nil {
 			log.Errorf("Webhook: Error putting image %v in perceptor queue %e", quayImage, err)
 		} else {

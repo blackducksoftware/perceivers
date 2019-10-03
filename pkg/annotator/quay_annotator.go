@@ -189,6 +189,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 				continue
 			}
 
+			log.Infof("Scan %s corresponds to %s", image.Repository, registry.URL)
 			repoSlice := strings.Split(image.Repository, "/")[1:]
 			repo := strings.Join(repoSlice, "/")
 			labelList := &QuayLabels{}

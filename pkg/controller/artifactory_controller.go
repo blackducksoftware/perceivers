@@ -117,7 +117,8 @@ func (ic *ArtifactoryController) imageLookup() error {
 						url = fmt.Sprintf("%s/%s/%s", registry.URL, repo.Key, image)
 						priority := 1
 						artImage := perceptorapi.NewImage(url, tag, sha, &priority, url, tag)
-						err = communicator.SendPerceptorAddEvent(ic.perceptorURL, artImage)
+						imageURL := fmt.Sprintf("%s/%s", ic.perceptorURL, perceptorapi.ImagePath)
+						err = communicator.SendPerceptorAddEvent(imageURL, artImage)
 						if err != nil {
 							log.Errorf("Controller: Error putting artifactory image %v in perceptor queue %e", artImage, err)
 						} else {

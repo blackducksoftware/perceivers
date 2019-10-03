@@ -131,6 +131,7 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 				continue
 			}
 
+			log.Infof("Scan %s corresponds to %s", image.Repository, registry.URL)
 			repos := &utils.ArtReposBySha{}
 			// Look for SHA
 			url := fmt.Sprintf("%s/api/search/checksum?sha256=%s", cred.URL, image.Sha)

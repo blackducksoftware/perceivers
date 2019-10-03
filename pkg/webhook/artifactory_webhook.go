@@ -49,7 +49,7 @@ func NewArtifactoryWebhook(perceptorURL string, credentials []*utils.RegistryAut
 
 // Run starts a controller that watches images and sends them to perceptor
 func (aw *ArtifactoryWebhook) Run() {
-	log.Infof("Webhook: starting artifactory webhook on 443 at /webhook")
+	log.Infof("Webhook: starting artifactory webhook on 8443 at /webhook")
 	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			log.Info("Webhook: Artifactory hook incoming!")
@@ -65,7 +65,7 @@ func (aw *ArtifactoryWebhook) Run() {
 			}
 		}
 	})
-	err := http.ListenAndServe(":443", nil)
+	err := http.ListenAndServe(":8443", nil)
 	if err != nil {
 		log.Error("Webhook: Webhook listener failed!")
 	}
@@ -100,7 +100,8 @@ func (aw *ArtifactoryWebhook) webhook(ahs *utils.ArtHookStruct, cred *utils.Regi
 			priority := 1
 			artImage := perceptorapi.NewImage(url, a.Version, sha, &priority, url, a.Version)
 
-			err = communicator.SendPerceptorAddEvent(perceptorURL, artImage)
+			imageURL := fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ImagePath)
+			err = communicator.SendPerceptorAddEvent(imageURL, artImage)
 			if err != nil {
 				log.Errorf("Webhook: Error putting artifactory image %v in perceptor queue %e", artImage, err)
 			} else {
