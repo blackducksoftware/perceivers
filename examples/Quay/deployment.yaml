@@ -1,0 +1,82 @@
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  creationTimestamp: "2019-07-24T23:00:45Z"
+  generation: 1
+  labels:
+    app: opssight
+    name: opssight-quay-processor
+  name: opssight-quay-processor
+  namespace: bd-ops
+  resourceVersion: "3067321"
+  selfLink: /apis/extensions/v1beta1/namespaces/bd-ops/deployments/opssight-quay-processor
+  uid: de8b79b4-ae66-11e9-bee9-42010a000b1d
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: opssight
+      name: opssight-quay-processor
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: opssight
+        name: opssight-quay-processor
+      name: opssight-quay-processor
+    spec:
+      containers:
+      - args:
+        - /etc/opssight-pod-processor/opssight.json
+        command:
+        - ./quay-perceiver
+        env:
+        - name: "AT_QUAYACCESSTOKEN"
+          value: "pVnfIHISJXWrpBrKt08qhIq7fCJWbx33cU4vh84T"
+        envFrom:
+        - secretRef:
+            name: blackduck
+            optional: false
+        image: docker.io/gautambaghel/quay:latest
+        imagePullPolicy: Always
+        name: opssight-quay-processor
+        ports:
+        - containerPort: 3008
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 300m
+            memory: 1300Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/opssight-pod-processor
+          name: opssight-pod-processor
+        - mountPath: /tmp
+          name: logs
+      dnsPolicy: ClusterFirstWithHostNet
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: opssight-processor
+      serviceAccountName: opssight-processor
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: logs
+      - configMap:
+          defaultMode: 420
+          name: opssight
+        name: opssight-pod-processor

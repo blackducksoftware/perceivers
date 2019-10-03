@@ -1,0 +1,7 @@
+cmd/artifactory-perceiver/artifactory-perceiver
+cmd/quay-perceiver/quay-perceiver
+cmd/artifactory-perceiver/example.json
+cmd/artifactory-perceiver/external-hub.json
+cmd/artifactory-perceiver/securedRegistries.json
+go.mod
+go.sum
