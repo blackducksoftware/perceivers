@@ -62,17 +62,15 @@ type QuayTagDigest struct {
 
 // QuayWebhook handles watching images and sending them to perceptor
 type QuayWebhook struct {
-	perceptorURL    string
-	registryAuths   []*utils.RegistryAuth
-	quayAccessToken string
+	perceptorURL  string
+	registryAuths []*utils.RegistryAuth
 }
 
 // NewQuayWebhook creates a new QuayWebhook object
-func NewQuayWebhook(perceptorURL string, credentials []*utils.RegistryAuth, quayAccessToken string) *QuayWebhook {
+func NewQuayWebhook(perceptorURL string, credentials []*utils.RegistryAuth) *QuayWebhook {
 	return &QuayWebhook{
-		perceptorURL:    perceptorURL,
-		registryAuths:   credentials,
-		quayAccessToken: quayAccessToken,
+		perceptorURL:  perceptorURL,
+		registryAuths: credentials,
 	}
 }
 
@@ -81,16 +79,20 @@ func (qw *QuayWebhook) Run() {
 
 	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			log.Info("Quay hook incoming!")
+			log.Info("Quay webhook incoming!")
 			qr := &QuayRepo{}
 			json.NewDecoder(r.Body).Decode(qr)
-			qw.webhook(qw.quayAccessToken, qr)
+			for _, registry := range qw.registryAuths {
+				if strings.Contains(qr.DockerURL, registry.URL) {
+					qw.webhook(registry.Token, qr)
+				}
+			}
 		}
 	})
-	log.Infof("Webhook: starting quay webhook on 8443 at /webhook")
-	err := http.ListenAndServe(":8443", nil)
+	log.Infof("Webhook: starting quay webhook on :3008 at /webhook")
+	err := http.ListenAndServe(":3008", nil)
 	if err != nil {
-		log.Errorf("Webhook: Webhook listener of 8443 failed: %e", err)
+		log.Errorf("Webhook: Webhook listener on port 3008 failed: %e", err)
 	}
 }
 

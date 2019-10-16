@@ -60,7 +60,7 @@ func NewArtifactoryAnnotator(perceptorURL string, registryAuths []*utils.Registr
 
 // Run starts a controller that will annotate images
 func (ia *ArtifactoryAnnotator) Run(interval time.Duration, stopCh <-chan struct{}) {
-	log.Infof("Annotator: starting artifactory annotator controller")
+	log.Infof("Annotator: starting artifactory annotator")
 
 	for {
 		select {

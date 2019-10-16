@@ -25,7 +25,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/blackducksoftware/perceivers/pkg/utils"
 	"github.com/fsnotify/fsnotify"
@@ -47,7 +46,6 @@ type PerceiverConfig struct {
 
 // Config return the Artifactory Perceiver configurations
 type Config struct {
-	QuayAccessToken         string
 	Perceptor               PerceptorConfig
 	Perceiver               PerceiverConfig
 	PrivateDockerRegistries []*utils.RegistryAuth
@@ -63,10 +61,6 @@ func GetConfig(configPath string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
 	}
-
-	viper.SetEnvPrefix("AT")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.BindEnv("QuayAccessToken")
 
 	err = viper.Unmarshal(&cfg)
 	if err != nil {

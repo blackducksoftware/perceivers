@@ -49,7 +49,7 @@ func NewArtifactoryWebhook(perceptorURL string, credentials []*utils.RegistryAut
 
 // Run starts a controller that watches images and sends them to perceptor
 func (aw *ArtifactoryWebhook) Run() {
-	log.Infof("Webhook: starting artifactory webhook on 8443 at /webhook")
+	log.Infof("Webhook: starting artifactory webhook on :3008 at /webhook")
 	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			log.Info("Webhook: Artifactory hook incoming!")
@@ -65,9 +65,9 @@ func (aw *ArtifactoryWebhook) Run() {
 			}
 		}
 	})
-	err := http.ListenAndServe(":8443", nil)
+	err := http.ListenAndServe(":3008", nil)
 	if err != nil {
-		log.Error("Webhook: Webhook listener failed!")
+		log.Error("Webhook: Webhook listener on port 3008 failed: %e", err)
 	}
 }
 
