@@ -54,6 +54,13 @@ func NewQuayPerceiver(configPath string) (*QuayPerceiver, error) {
 	prometheus.Unregister(prometheus.NewGoCollector())
 	http.Handle("/metrics", prometheus.Handler())
 
+	// Set log level
+	level, err := config.GetLogLevel()
+	if err != nil {
+		level = log.DebugLevel
+	}
+	log.SetLevel(level)
+
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.Perceptor.Host, config.Perceptor.Port)
 	qp := QuayPerceiver{
 		annotator:          annotator.NewQuayAnnotator(perceptorURL, config.PrivateDockerRegistries),

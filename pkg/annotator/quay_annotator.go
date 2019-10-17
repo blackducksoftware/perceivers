@@ -184,6 +184,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 
 			// The base URL may contain something in their instance/registry, splitting has no loss
 			if !strings.Contains(image.Repository, strings.Split(registry.URL, "/")[0]) {
+				log.Debugf("Annotator: Registry URL %s does not correspond to scan repo %s", registry.URL, image.Repository)
 				continue
 			}
 

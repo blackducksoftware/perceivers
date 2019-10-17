@@ -128,6 +128,7 @@ func (ia *ArtifactoryAnnotator) addAnnotationsToImages(results perceptorapi.Scan
 
 			// The base URL may contain something in thier instance, splitting has no loss
 			if !strings.Contains(image.Repository, strings.Split(registry.URL, "/")[0]) {
+				log.Debugf("Annotator: Registry URL %s does not correspond to scan repo %s", registry.URL, image.Repository)
 				continue
 			}
 

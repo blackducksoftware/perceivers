@@ -25,10 +25,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/blackducksoftware/perceivers/pkg/utils"
 	"github.com/fsnotify/fsnotify"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -38,19 +38,25 @@ type PerceptorConfig struct {
 	Port int
 }
 
+// ArtifactoryPerceiverConfig contains config specific to pod perceivers
+type ArtifactoryPerceiverConfig struct {
+	Dumper bool
+}
+
 // PerceiverConfig contains general Perceiver config
 type PerceiverConfig struct {
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
 	Port                      int
+	Artifactory               ArtifactoryPerceiverConfig
 }
 
 // Config contains the ArtifactoryPerceiver configurations
 type Config struct {
+	LogLevel                string
 	Perceptor               PerceptorConfig
 	Perceiver               PerceiverConfig
 	PrivateDockerRegistries []*utils.RegistryAuth
-	Dumper                  bool
 }
 
 // GetConfig returns a configuration object to configure a ArtifactoryPerceiver
@@ -64,10 +70,6 @@ func GetConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	viper.SetEnvPrefix("AT")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.BindEnv("Dumper")
-
 	err = viper.Unmarshal(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
@@ -79,6 +81,11 @@ func GetConfig(configPath string) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// GetLogLevel returns the log level set in Opssight Spec Config
+func (config *Config) GetLogLevel() (log.Level, error) {
+	return log.ParseLevel(config.LogLevel)
 }
 
 // StartWatch will start watching the ArtifactoryPerceiver configuration file and
