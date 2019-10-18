@@ -67,7 +67,7 @@ func (aw *ArtifactoryWebhook) Run() {
 	})
 	err := http.ListenAndServe(":3008", nil)
 	if err != nil {
-		log.Error("Webhook: Webhook listener on port 3008 failed: %e", err)
+		log.Errorf("Webhook: Webhook listener on port 3008 failed: %e", err)
 	}
 }
 
