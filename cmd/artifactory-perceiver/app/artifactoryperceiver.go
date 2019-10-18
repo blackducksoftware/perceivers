@@ -57,6 +57,13 @@ func NewArtifactoryPerceiver(configPath string) (*ArtifactoryPerceiver, error) {
 	prometheus.Unregister(prometheus.NewGoCollector())
 	http.Handle("/metrics", prometheus.Handler())
 
+	// Set log level
+	level, err := config.GetLogLevel()
+	if err != nil {
+		level = log.DebugLevel
+	}
+	log.SetLevel(level)
+
 	perceptorURL := fmt.Sprintf("http://%s:%d", config.Perceptor.Host, config.Perceptor.Port)
 	ap := ArtifactoryPerceiver{
 		controller:         controller.NewArtifactoryController(perceptorURL, config.PrivateDockerRegistries),
@@ -65,7 +72,7 @@ func NewArtifactoryPerceiver(configPath string) (*ArtifactoryPerceiver, error) {
 		annotationInterval: time.Second * time.Duration(config.Perceiver.AnnotationIntervalSeconds),
 		dumpInterval:       time.Minute * time.Duration(config.Perceiver.DumpIntervalMinutes),
 		metricsURL:         fmt.Sprintf(":%d", config.Perceiver.Port),
-		dumper:             config.Dumper,
+		dumper:             config.Perceiver.Artifactory.Dumper,
 	}
 	return &ap, nil
 }

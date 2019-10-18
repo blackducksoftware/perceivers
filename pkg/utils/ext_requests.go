@@ -34,6 +34,7 @@ type RegistryAuth struct {
 	URL      string
 	User     string
 	Password string
+	Token    string
 }
 
 // GetResourceOfType takes in the specified URL with credentials and

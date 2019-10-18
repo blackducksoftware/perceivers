@@ -25,10 +25,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/blackducksoftware/perceivers/pkg/utils"
 	"github.com/fsnotify/fsnotify"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -47,7 +47,7 @@ type PerceiverConfig struct {
 
 // Config return the Artifactory Perceiver configurations
 type Config struct {
-	QuayAccessToken         string
+	LogLevel                string
 	Perceptor               PerceptorConfig
 	Perceiver               PerceiverConfig
 	PrivateDockerRegistries []*utils.RegistryAuth
@@ -64,10 +64,6 @@ func GetConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	viper.SetEnvPrefix("AT")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.BindEnv("QuayAccessToken")
-
 	err = viper.Unmarshal(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
@@ -79,6 +75,11 @@ func GetConfig(configPath string) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// GetLogLevel returns the log level set in Opssight Spec Config
+func (config *Config) GetLogLevel() (log.Level, error) {
+	return log.ParseLevel(config.LogLevel)
 }
 
 // StartWatch will start watching the ImagePerceiver configuration file and
