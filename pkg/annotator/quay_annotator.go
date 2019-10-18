@@ -99,17 +99,15 @@ const (
 
 // QuayAnnotator handles annotating quay images with vulnerability and policy issues
 type QuayAnnotator struct {
-	scanResultsURL  string
-	registryAuths   []*utils.RegistryAuth
-	quayAccessToken string
+	scanResultsURL string
+	registryAuths  []*utils.RegistryAuth
 }
 
 // NewQuayAnnotator creates a new QuayAnnotator object
-func NewQuayAnnotator(perceptorURL string, registryAuths []*utils.RegistryAuth, quayAccessToken string) *QuayAnnotator {
+func NewQuayAnnotator(perceptorURL string, registryAuths []*utils.RegistryAuth) *QuayAnnotator {
 	return &QuayAnnotator{
-		scanResultsURL:  fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ScanResultsPath),
-		registryAuths:   registryAuths,
-		quayAccessToken: quayAccessToken,
+		scanResultsURL: fmt.Sprintf("%s/%s", perceptorURL, perceptorapi.ScanResultsPath),
+		registryAuths:  registryAuths,
 	}
 }
 
@@ -174,7 +172,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 	imgs := 0
 
 	for _, registry := range qa.registryAuths {
-		auth, err := PingQuayServer("https://"+registry.URL, qa.quayAccessToken)
+		auth, err := PingQuayServer("https://"+registry.URL, registry.User, registry.Password, registry.Token)
 
 		if err != nil {
 			log.Debugf("Annotator: URL %s either not a valid quay repository or incorrect token: %e", registry.URL, err)
@@ -186,6 +184,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 
 			// The base URL may contain something in their instance/registry, splitting has no loss
 			if !strings.Contains(image.Repository, strings.Split(registry.URL, "/")[0]) {
+				log.Debugf("Annotator: Registry URL %s does not correspond to scan repo %s", registry.URL, image.Repository)
 				continue
 			}
 
@@ -223,7 +222,7 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 				// Don't need to touch other tags apart form BD ones
 				if _, ok := nt[key]; ok {
 					imageInfo := fmt.Sprintf("%s:%s with SHA %s", image.Repository, image.Tag, image.Sha)
-					qa.UpdateAnnotation(url, key, value, imageInfo)
+					qa.UpdateAnnotation(url, key, value, imageInfo, registry.Token)
 				}
 			}
 
@@ -236,11 +235,11 @@ func (qa *QuayAnnotator) addAnnotationsToImages(results perceptorapi.ScanResults
 }
 
 // UpdateAnnotation takes the specific Quay URL and applies the properties/annotations given by BD
-func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue string, imageInfo string) {
+func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue string, imageInfo string, quayToken string) {
 
 	filterURL := fmt.Sprintf("%s?filter=%s", url, labelKey)
 	labelList := &QuayLabels{}
-	err := utils.GetResourceOfType(filterURL, nil, qa.quayAccessToken, labelList)
+	err := utils.GetResourceOfType(filterURL, nil, quayToken, labelList)
 	if err != nil {
 		log.Errorf("Error in getting labels at URL %s for update: %e", url, err)
 		return
@@ -248,14 +247,14 @@ func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue 
 
 	for _, label := range labelList.Labels {
 		deleteURL := fmt.Sprintf("%s/%s", url, label.ID)
-		err = DeleteQuayLabel(deleteURL, qa.quayAccessToken, label.ID)
+		err = DeleteQuayLabel(deleteURL, quayToken, label.ID)
 		if err != nil {
 			log.Errorf("Error in deleting label %s at URL %s: %e", label.Key, deleteURL, err)
 			log.Errorf("Images may contain duplicate labels!")
 		}
 	}
 
-	err = AddQuayLabel(url, qa.quayAccessToken, labelKey, newValue)
+	err = AddQuayLabel(url, quayToken, labelKey, newValue)
 	if err != nil {
 		log.Errorf("Error in adding label %s at URL %s after deleting: %e", labelKey, url, err)
 		return
@@ -267,7 +266,7 @@ func (qa *QuayAnnotator) UpdateAnnotation(url string, labelKey string, newValue 
 
 // PingQuayServer takes in the specified URL with access token and checks weather
 // it's a valid token for quay by pinging the server
-func PingQuayServer(url string, accessToken string) (*utils.RegistryAuth, error) {
+func PingQuayServer(url string, user string, password string, accessToken string) (*utils.RegistryAuth, error) {
 	url = fmt.Sprintf("%s/api/v1/user", url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -288,7 +287,7 @@ func PingQuayServer(url string, accessToken string) (*utils.RegistryAuth, error)
 			url = strings.Replace(url, "https://", "http://", -1)
 			// Reset to baseURL
 			url = strings.Replace(url, "/api/v1/user", "", -1)
-			return PingQuayServer(url, accessToken)
+			return PingQuayServer(url, user, password, accessToken)
 		}
 
 		return nil, fmt.Errorf("Error in pinging quay server supposed to get %d response code got %d", http.StatusOK, resp.StatusCode)
@@ -296,7 +295,7 @@ func PingQuayServer(url string, accessToken string) (*utils.RegistryAuth, error)
 
 	// Reset to baseURL
 	url = strings.Replace(url, "/api/v1/user", "", -1)
-	return &utils.RegistryAuth{URL: url, User: accessToken, Password: accessToken}, nil
+	return &utils.RegistryAuth{URL: url, User: user, Password: password, Token: accessToken}, nil
 }
 
 // AddQuayLabel takes the specific Quay URL and adds the properties/annotations given by BD
