@@ -101,17 +101,17 @@ func (qw *QuayWebhook) Run() {
 		if errC != nil || errK != nil {
 			log.Errorf("Webhook: Writing to a certificate file failed %e %e", errC, errK)
 		} else {
-			log.Infof("Webhook: Starting HTTPs webhook with TLS enabled for quay on :3008 at /webhook")
-			err := http.ListenAndServeTLS(":3008", "cert", "key", nil)
+			log.Infof("Webhook: Starting HTTPs webhook with TLS enabled for quay on :3002 at /webhook")
+			err := http.ListenAndServeTLS(":3002", "cert", "key", nil)
 			if err != nil {
-				log.Errorf("Webhook: HTTPs listener on port 3008 failed: %e", err)
+				log.Errorf("Webhook: HTTPs listener on port 3002 failed: %e", err)
 			}
 		}
 	} else {
-		log.Infof("Webhook: starting HTTP webhook for quay on :3008 at /webhook")
-		err := http.ListenAndServe(":3008", nil)
+		log.Infof("Webhook: starting HTTP webhook for quay on :3002 at /webhook")
+		err := http.ListenAndServe(":3002", nil)
 		if err != nil {
-			log.Errorf("Webhook: HTTP listener on port 3008 failed: %e", err)
+			log.Errorf("Webhook: HTTP listener on port 3002 failed: %e", err)
 		}
 	}
 }
