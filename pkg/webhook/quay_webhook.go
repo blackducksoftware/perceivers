@@ -88,7 +88,7 @@ func (qw *QuayWebhook) Run() {
 			qr := &QuayRepo{}
 			json.NewDecoder(r.Body).Decode(qr)
 			for _, registry := range qw.registryAuths {
-				if strings.Contains(qr.DockerURL, registry.URL) {
+				if strings.Contains(qr.DockerURL, registry.URL) && len(registry.Token) > 0 {
 					qw.webhook(registry.Token, qr)
 				}
 			}
@@ -123,7 +123,7 @@ func (qw *QuayWebhook) webhook(bearerToken string, qr *QuayRepo) {
 	url = fmt.Sprintf("%s/tag", url)
 	err := utils.GetResourceOfType(url, nil, bearerToken, rt)
 	if err != nil {
-		log.Errorf("Webhook: Error in getting docker repo: %e", err)
+		log.Errorf("Webhook: Error in getting docker repo: %+v", err)
 	}
 
 	for _, tagDigest := range rt.Tags {
