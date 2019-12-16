@@ -30,7 +30,7 @@ $(PERCEIVERS):
 ifeq ($(MAKECMDGOALS),${LOCAL_TARGET})
 	cd cmd/$@; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $@
 else
-	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/perceivers -w /go/src/github.com/blackducksoftware/perceivers/cmd/$@ golang:1.9 go build -o $@
+	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -e GO111MODULE=off -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/perceivers -w /go/src/github.com/blackducksoftware/perceivers/cmd/$@ golang:1.13 go build -o $@
 endif
 	cp cmd/$@/$@ ${OUTDIR}
 
@@ -41,7 +41,7 @@ push: container
 	$(foreach p,${PERCEIVERS},$(PREFIX_CMD) docker $(DOCKER_OPTS) push $(REGISTRY)/$(PREFIX)${p}:latest;)
 
 test:
-	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/perceivers -w /go/src/github.com/blackducksoftware/perceivers golang:1.9 go test ./pkg/...
+	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -e GO111MODULE=off -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/perceivers -w /go/src/github.com/blackducksoftware/perceivers golang:1.13 go test ./pkg/...
 
 clean:
 	rm -rf ${OUTDIR}
