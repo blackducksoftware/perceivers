@@ -120,7 +120,7 @@ func (qw *QuayWebhook) webhook(bearerToken string, qr *QuayRepo) {
 
 	rt := &QuayTagDigest{}
 	url := strings.Replace(qr.Homepage, "repository", "api/v1/repository", -1)
-	url = fmt.Sprintf("%s/tag", url)
+	url = fmt.Sprintf("%s/tag?onlyActiveTags=true", url)
 	err := utils.GetResourceOfType(url, nil, bearerToken, rt)
 	if err != nil {
 		log.Errorf("Webhook: Error in getting docker repo: %+v", err)
